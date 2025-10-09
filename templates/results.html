@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Results - {{ repo_path }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="fab fa-github me-2"></i>
+                        {{ analysis.metadata.repository }}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-clock me-1"></i>
+                        Analyzed on {{ timestamp }}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Analyze Another
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 mb-2">
+                        <span class="badge bg-{{ analysis.summary.status_color }} fs-4">
+                            {{ analysis.summary.health_score }}%
+                        </span>
+                    </div>
+                    <h6 class="card-title">Health Score</h6>
+                    <p class="card-text text-muted">{{ analysis.summary.status }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 mb-2">
+                        <span class="text-{{ analysis.test_analysis.coverage_color }}">
+                            {{ analysis.test_analysis.coverage_metrics.overall }}%
+                        </span>
+                    </div>
+                    <h6 class="card-title">Test Coverage</h6>
+                    <p class="card-text text-muted">{{ analysis.test_analysis.coverage_level }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 mb-2">
+                        {% if analysis.summary.critical_issues > 0 %}
+                            <span class="text-danger">{{ analysis.summary.critical_issues }}</span>
+                        {% else %}
+                            <span class="text-success">0</span>
+                        {% endif %}
+                    </div>
+                    <h6 class="card-title">Critical Issues</h6>
+                    <p class="card-text text-muted">Security & Quality</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="display-6 mb-2">
+                        <span class="text-info">{{ analysis.summary.test_files_count }}</span>
+                    </div>
+                    <h6 class="card-title">Test Files</h6>
+                    <p class="card-text text-muted">Unit & Integration</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Primary Concerns Alert -->
+    {% if analysis.summary.primary_concerns %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-warning border-0 shadow-sm">
+                <h5 class="alert-heading">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Primary Concerns
+                </h5>
+                <ul class="mb-0">
+                    {% for concern in analysis.summary.primary_concerns %}
+                    <li>{{ concern }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Main Content Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <ul class="nav nav-tabs mb-4" id="analysisTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" 
+                            data-bs-target="#overview" type="button" role="tab">
+                        <i class="fas fa-tachometer-alt me-1"></i>Overview
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="test-coverage-tab" data-bs-toggle="tab" 
+                            data-bs-target="#test-coverage" type="button" role="tab">
+                        <i class="fas fa-vial me-1"></i>Test Coverage
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="issues-tab" data-bs-toggle="tab" 
+                            data-bs-target="#issues" type="button" role="tab">
+                        <i class="fas fa-exclamation-circle me-1"></i>Issues
+                        {% if analysis.summary.total_issues > 0 %}
+                        <span class="badge bg-danger ms-1">{{ analysis.summary.total_issues }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab" 
+                            data-bs-target="#recommendations" type="button" role="tab">
+                        <i class="fas fa-lightbulb me-1"></i>Recommendations
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="action-plan-tab" data-bs-toggle="tab" 
+                            data-bs-target="#action-plan" type="button" role="tab">
+                        <i class="fas fa-tasks me-1"></i>Action Plan
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="analysisTabsContent">
+                <!-- Overview Tab -->
+                <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                    {% include 'results_overview.html' %}
+                </div>
+
+                <!-- Test Coverage Tab -->
+                <div class="tab-pane fade" id="test-coverage" role="tabpanel">
+                    {% include 'results_coverage.html' %}
+                </div>
+
+                <!-- Issues Tab -->
+                <div class="tab-pane fade" id="issues" role="tabpanel">
+                    {% include 'results_issues.html' %}
+                </div>
+
+                <!-- Recommendations Tab -->
+                <div class="tab-pane fade" id="recommendations" role="tabpanel">
+                    {% include 'results_recommendations.html' %}
+                </div>
+
+                <!-- Action Plan Tab -->
+                <div class="tab-pane fade" id="action-plan" role="tabpanel">
+                    {% include 'results_action_plan.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Analysis Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Choose export format:</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportReport('json')">
+                        <i class="fas fa-code me-2"></i>JSON Format
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="exportReport('pdf')">
+                        <i class="fas fa-file-pdf me-2"></i>PDF Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportReport(format) {
+    const analysisData = {{ analysis | tojson }};
+    
+    if (format === 'json') {
+        const dataStr = JSON.stringify(analysisData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `${analysisData.metadata.repository.replace('/', '_')}_analysis.json`;
+        link.click();
+    }
+    
+    bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

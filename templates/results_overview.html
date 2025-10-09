@@ -1,0 +1,155 @@
+<!-- Overview Tab Content -->
+<div class="row mb-4 fade-in">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100 border-primary">
+            <div class="card-header text-white" style="background: var(--gradient-primary);">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    📊 Repository Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted"><strong>🏷️ Name:</strong></td>
+                        <td><strong>{{ analysis.metadata.repository }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>📝 Description:</strong></td>
+                        <td>{{ analysis.metadata.description or 'No description available' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>💻 Primary Language:</strong></td>
+                        <td>
+                            <span class="badge" style="background: var(--gradient-primary); color: white;">
+                                {{ analysis.metadata.primary_language or 'Unknown' }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>🌐 Languages:</strong></td>
+                        <td>
+                            {% for lang in analysis.metadata.languages %}
+                                <span class="badge bg-secondary me-1">{{ lang }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>⭐ Stars:</strong></td>
+                        <td>
+                            <i class="fas fa-star text-warning me-1"></i>
+                            <strong class="text-warning">{{ analysis.metadata.stars }}</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>🍴 Forks:</strong></td>
+                        <td>
+                            <i class="fas fa-code-branch text-info me-1"></i>
+                            <strong class="text-info">{{ analysis.metadata.forks }}</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>👥 Contributors:</strong></td>
+                        <td>
+                            <i class="fas fa-users text-success me-1"></i>
+                            {{ analysis.metadata.contributors }}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted"><strong>License:</strong></td>
+                        <td>{{ analysis.metadata.license or 'Not specified' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Quality Scores
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-{{ analysis.summary.status_color }}">
+                                {{ analysis.scores.health_score }}%
+                            </div>
+                            <div class="metric-label">Overall Health</div>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-{{ 'success' if analysis.scores.coverage_score >= 75 else 'warning' if analysis.scores.coverage_score >= 50 else 'danger' }}">
+                                {{ analysis.scores.coverage_score }}%
+                            </div>
+                            <div class="metric-label">Test Coverage</div>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-{{ 'success' if analysis.scores.security_score >= 80 else 'warning' if analysis.scores.security_score >= 60 else 'danger' }}">
+                                {{ analysis.scores.security_score }}%
+                            </div>
+                            <div class="metric-label">Security</div>
+                        </div>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="metric-card">
+                            <div class="metric-value text-{{ 'success' if analysis.scores.documentation_score >= 75 else 'warning' if analysis.scores.documentation_score >= 50 else 'danger' }}">
+                                {{ analysis.scores.documentation_score }}%
+                            </div>
+                            <div class="metric-label">Documentation</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Improvement Areas -->
+{% if analysis.improvement_areas %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-arrow-up me-2"></i>
+                    Key Improvement Areas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for area in analysis.improvement_areas %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">
+                                    <span class="badge bg-{{ 'danger' if area.priority == 'Critical' else 'warning' if area.priority == 'High' else 'info' }} me-2">
+                                        {{ area.priority }}
+                                    </span>
+                                    {{ area.area }}
+                                </h6>
+                                <div class="progress mb-2" style="height: 8px;">
+                                    <div class="progress-bar bg-{{ 'success' if area.current_score >= 75 else 'warning' if area.current_score >= 50 else 'danger' }}" 
+                                         style="width: {{ area.current_score }}%"></div>
+                                </div>
+                                <small class="text-muted">
+                                    Current: {{ area.current_score }}% → Target: {{ area.target_score }}%
+                                </small>
+                                <p class="card-text mt-2">{{ area.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

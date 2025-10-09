@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+
+{% block title %}AI-Enhanced Analysis Results - {{ repo_path }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1">
+                        <i class="fab fa-github me-2"></i>
+                        {{ analysis.metadata.repository }}
+                        {% if analysis.ai_enabled %}
+                        <span class="badge bg-primary ms-2">
+                            <i class="fas fa-brain me-1"></i>AI Enhanced
+                        </span>
+                        {% endif %}
+                    </h1>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-clock me-1"></i>
+                        Analyzed on {{ timestamp }}
+                        {% if analysis.ai_enabled %}
+                        <span class="ms-2">
+                            <i class="fas fa-robot me-1"></i>
+                            Powered by AI Insights
+                        </span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#exportModal">
+                        <i class="fas fa-download me-1"></i>Export Report
+                    </button>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Analyze Another
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Summary Section (if AI enabled) -->
+    {% if analysis.ai_enabled and analysis.ai_insights %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-lg bg-gradient-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="card-title mb-3">
+                                <i class="fas fa-brain me-2"></i>
+                                AI-Powered Insights
+                            </h4>
+                            {% if analysis.enhanced_recommendations %}
+                            <p class="card-text">
+                                Our AI has analyzed {{ analysis.metadata.repository }} and identified 
+                                <strong>{{ analysis.enhanced_recommendations.priority_actions|length + analysis.enhanced_recommendations.quick_wins|length }}</strong> 
+                                actionable improvements with high-confidence recommendations.
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 text-center">
+                            {% set ai_summary = analysis.get('ai_summary', {}) %}
+                            <div class="display-4 mb-2">{{ "%.1f"|format(ai_summary.get('overall_ai_score', 0)) }}/10</div>
+                            <small>AI Confidence: {{ ai_summary.get('confidence_level', 'medium').title() }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2 text-{{ analysis.summary.status_color }}">
+                        {{ analysis.summary.health_score }}
+                    </div>
+                    <h6 class="card-title">Health Score</h6>
+                    <span class="badge bg-{{ analysis.summary.status_color }}">{{ analysis.summary.status }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2 text-primary">
+                        {{ "%.1f"|format(analysis.summary.test_coverage) }}%
+                    </div>
+                    <h6 class="card-title">Test Coverage</h6>
+                    <small class="text-muted">{{ analysis.summary.test_files_count }} test files</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2 text-warning">
+                        {{ analysis.summary.total_issues }}
+                    </div>
+                    <h6 class="card-title">Issues Found</h6>
+                    <small class="text-muted">
+                        {{ analysis.summary.critical_issues }} critical
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 mb-2 text-info">
+                        {{ analysis.metadata.contributors }}
+                    </div>
+                    <h6 class="card-title">Contributors</h6>
+                    <small class="text-muted">{{ analysis.metadata.primary_language }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Insights Tabs (if AI enabled) -->
+    {% if analysis.ai_enabled and analysis.ai_insights %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-robot me-2"></i>
+                        AI Analysis Dashboard
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="aiInsightsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="architecture-tab" data-bs-toggle="tab" data-bs-target="#architecture" type="button" role="tab">
+                                <i class="fas fa-sitemap me-1"></i>Architecture
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="quality-tab" data-bs-toggle="tab" data-bs-target="#quality" type="button" role="tab">
+                                <i class="fas fa-code me-1"></i>Code Quality
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">
+                                <i class="fas fa-shield-alt me-1"></i>Security
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" type="button" role="tab">
+                                <i class="fas fa-tachometer-alt me-1"></i>Performance
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="aiInsightsTabsContent">
+                        <!-- Architecture Tab -->
+                        <div class="tab-pane fade show active" id="architecture" role="tabpanel">
+                            {% if analysis.ai_insights.architecture %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Complexity Analysis</h6>
+                                    <div class="progress mb-3">
+                                        {% set complexity = analysis.ai_insights.architecture.get('complexity_score', 5) %}
+                                        <div class="progress-bar bg-{{ 'success' if complexity < 5 else 'warning' if complexity < 7 else 'danger' }}" 
+                                             style="width: {{ (complexity/10*100)|round }}%">
+                                            {{ complexity }}/10
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Architecture Score</h6>
+                                    <div class="progress mb-3">
+                                        {% set arch_score = analysis.ai_insights.architecture.get('score', 7) %}
+                                        <div class="progress-bar bg-primary" style="width: {{ (arch_score/10*100)|round }}%">
+                                            {{ arch_score }}/10
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Key Findings</h6>
+                                <ul class="list-unstyled">
+                                    {% for finding in analysis.ai_insights.architecture.get('key_findings', []) %}
+                                    <li class="mb-2">
+                                        <i class="fas fa-chevron-right text-primary me-2"></i>
+                                        {{ finding }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Architecture analysis is being processed...
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Code Quality Tab -->
+                        <div class="tab-pane fade" id="quality" role="tabpanel">
+                            {% if analysis.ai_insights.code_quality %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Quality Score</h6>
+                                    <div class="progress mb-3">
+                                        {% set quality_score = analysis.ai_insights.code_quality.get('score', 7) %}
+                                        <div class="progress-bar bg-success" style="width: {{ (quality_score/10*100)|round }}%">
+                                            {{ quality_score }}/10
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Maintainability</h6>
+                                    <div class="progress mb-3">
+                                        {% set maintainability = analysis.ai_insights.code_quality.get('maintainability', 8) %}
+                                        <div class="progress-bar bg-info" style="width: {{ (maintainability/10*100)|round }}%">
+                                            {{ maintainability }}/10
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Improvement Areas</h6>
+                                <div class="row">
+                                    {% for improvement in analysis.ai_insights.code_quality.get('improvements', [])[:4] %}
+                                    <div class="col-md-6 mb-2">
+                                        <div class="card border-left-warning">
+                                            <div class="card-body py-2">
+                                                <small>{{ improvement.get('title', improvement) }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Code quality analysis is being processed...
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Security Tab -->
+                        <div class="tab-pane fade" id="security" role="tabpanel">
+                            {% if analysis.ai_insights.security %}
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <h6>Security Risk Level</h6>
+                                    {% set risk_score = analysis.ai_insights.security.get('risk_score', 3) %}
+                                    {% set risk_level = 'Low' if risk_score < 4 else 'Medium' if risk_score < 7 else 'High' %}
+                                    {% set risk_color = 'success' if risk_score < 4 else 'warning' if risk_score < 7 else 'danger' %}
+                                    <div class="alert alert-{{ risk_color }}">
+                                        <i class="fas fa-shield-alt me-2"></i>
+                                        Risk Level: <strong>{{ risk_level }}</strong> ({{ risk_score }}/10)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Security Recommendations</h6>
+                                <ul class="list-group list-group-flush">
+                                    {% for rec in analysis.ai_insights.security.get('recommendations', [])[:5] %}
+                                    <li class="list-group-item border-0 px-0">
+                                        <i class="fas fa-lock text-warning me-2"></i>
+                                        {{ rec.get('title', rec) if rec is mapping else rec }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Security analysis is being processed...
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Performance Tab -->
+                        <div class="tab-pane fade" id="performance" role="tabpanel">
+                            {% if analysis.ai_insights.performance %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Performance Score</h6>
+                                    <div class="progress mb-3">
+                                        {% set perf_score = analysis.ai_insights.performance.get('score', 7) %}
+                                        <div class="progress-bar bg-success" style="width: {{ (perf_score/10*100)|round }}%">
+                                            {{ perf_score }}/10
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Optimization Potential</h6>
+                                    <div class="progress mb-3">
+                                        {% set opt_potential = analysis.ai_insights.performance.get('optimization_potential', 6) %}
+                                        <div class="progress-bar bg-warning" style="width: {{ (opt_potential/10*100)|round }}%">
+                                            {{ opt_potential }}/10
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <h6>Optimization Opportunities</h6>
+                                <div class="list-group">
+                                    {% for opt in analysis.ai_insights.performance.get('optimizations', [])[:3] %}
+                                    <div class="list-group-item border-0">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ opt.get('title', 'Performance Optimization') }}</h6>
+                                            <small class="text-muted">{{ opt.get('impact', 'Medium') }} Impact</small>
+                                        </div>
+                                        <p class="mb-1">{{ opt.get('description', 'Optimization opportunity identified') }}</p>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Performance analysis is being processed...
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Enhanced Recommendations (AI) -->
+    {% if analysis.ai_enabled and analysis.enhanced_recommendations %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-magic me-2"></i>
+                        AI-Powered Action Plan
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Priority Actions -->
+                    {% if analysis.enhanced_recommendations.priority_actions %}
+                    <h6 class="text-danger mb-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Critical Actions
+                    </h6>
+                    <div class="row mb-4">
+                        {% for action in analysis.enhanced_recommendations.priority_actions %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-danger">
+                                <div class="card-body">
+                                    <h6 class="card-title text-danger">{{ action.title }}</h6>
+                                    <p class="card-text">{{ action.description }}</p>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Effort: {{ action.effort }}</small>
+                                        <small class="text-muted">Impact: {{ action.impact }}</small>
+                                    </div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-primary">AI Confidence: {{ (action.get('ai_confidence', 0.8) * 100)|round }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Quick Wins -->
+                    {% if analysis.enhanced_recommendations.quick_wins %}
+                    <h6 class="text-success mb-3">
+                        <i class="fas fa-rocket me-2"></i>
+                        Quick Wins
+                    </h6>
+                    <div class="row mb-4">
+                        {% for action in analysis.enhanced_recommendations.quick_wins %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body">
+                                    <h6 class="card-title text-success">{{ action.title }}</h6>
+                                    <p class="card-text">{{ action.description }}</p>
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">Effort: {{ action.effort }}</small>
+                                        <small class="text-muted">Impact: {{ action.impact }}</small>
+                                    </div>
+                                    <div class="mt-2">
+                                        <span class="badge bg-primary">AI Confidence: {{ (action.get('ai_confidence', 0.8) * 100)|round }}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Traditional Analysis Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <ul class="nav nav-tabs mb-3" id="analysisTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                        <i class="fas fa-chart-pie me-1"></i>Overview
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="coverage-tab" data-bs-toggle="tab" data-bs-target="#coverage" type="button" role="tab">
+                        <i class="fas fa-shield-check me-1"></i>Test Coverage
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="issues-tab" data-bs-toggle="tab" data-bs-target="#issues" type="button" role="tab">
+                        <i class="fas fa-bug me-1"></i>Issues
+                        {% if analysis.summary.total_issues > 0 %}
+                        <span class="badge bg-danger ms-1">{{ analysis.summary.total_issues }}</span>
+                        {% endif %}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="recommendations-tab" data-bs-toggle="tab" data-bs-target="#recommendations" type="button" role="tab">
+                        <i class="fas fa-lightbulb me-1"></i>Recommendations
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="analysisTabsContent">
+                <!-- Overview Tab -->
+                <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                    {% include 'results_overview.html' %}
+                </div>
+                
+                <!-- Coverage Tab -->
+                <div class="tab-pane fade" id="coverage" role="tabpanel">
+                    {% include 'results_coverage.html' %}
+                </div>
+                
+                <!-- Issues Tab -->
+                <div class="tab-pane fade" id="issues" role="tabpanel">
+                    {% include 'results_issues.html' %}
+                </div>
+                
+                <!-- Recommendations Tab -->
+                <div class="tab-pane fade" id="recommendations" role="tabpanel">
+                    {% include 'results_recommendations.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Export Analysis Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Choose your preferred export format:</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportReport('json')">
+                        <i class="fas fa-code me-2"></i>JSON Format
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="exportReport('markdown')">
+                        <i class="fas fa-file-text me-2"></i>Markdown Report
+                    </button>
+                    {% if analysis.ai_enabled %}
+                    <button class="btn btn-outline-primary" onclick="exportReport('ai-summary')">
+                        <i class="fas fa-brain me-2"></i>AI Summary Report
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportReport(format) {
+    const analysisData = {{ analysis | tojson }};
+    const repoPath = "{{ repo_path }}";
+    
+    if (format === 'json') {
+        const dataStr = JSON.stringify(analysisData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `${repoPath.replace('/', '_')}_analysis.json`;
+        link.click();
+    } else if (format === 'markdown' || format === 'ai-summary') {
+        // Redirect to export endpoint
+        window.location.href = `/export/${format}/${repoPath}`;
+    }
+    
+    bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
+}
+
+// Initialize tooltips and tabs
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Add smooth transitions to tab switching
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function(tab) {
+        tab.addEventListener('shown.bs.tab', function (e) {
+            // Add fade-in animation to active tab content
+            const target = document.querySelector(e.target.getAttribute('data-bs-target'));
+            target.style.opacity = '0';
+            setTimeout(() => {
+                target.style.transition = 'opacity 0.3s ease-in-out';
+                target.style.opacity = '1';
+            }, 50);
+        });
+    });
+    
+    // Auto-scroll to AI insights if present
+    {% if analysis.ai_enabled and analysis.ai_insights %}
+    setTimeout(() => {
+        const aiSection = document.querySelector('#aiInsightsTabs');
+        if (aiSection) {
+            aiSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 1000);
+    {% endif %}
+});
+</script>
+{% endblock %}

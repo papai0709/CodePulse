@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg text-center">
+                <div class="card-body p-5">
+                    <!-- Animated Loading Icon -->
+                    <div class="mb-4">
+                        <div class="loading-animation">
+                            <div class="loading-circle"></div>
+                            <div class="loading-circle"></div>
+                            <div class="loading-circle"></div>
+                        </div>
+                    </div>
+                    
+                    <h2 class="mb-4">
+                        <span class="text-primary">🔍</span> Analyzing Repository
+                    </h2>
+                    
+                    <p class="lead text-muted mb-4">
+                        We're performing a comprehensive analysis of your repository...
+                    </p>
+                    
+                    <!-- Progress Steps -->
+                    <div class="progress-steps mb-4">
+                        <div class="step active">
+                            <div class="step-icon">
+                                <i class="fab fa-github"></i>
+                            </div>
+                            <div class="step-label">Fetching Repository</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon">
+                                <i class="fas fa-vial"></i>
+                            </div>
+                            <div class="step-label">Analyzing Tests</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="step-label">Security Scan</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="step-label">Quality Check</div>
+                        </div>
+                        <div class="step">
+                            <div class="step-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="step-label">Generating Report</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Animated Progress Bar -->
+                    <div class="progress mb-4" style="height: 8px;">
+                        <div class="progress-bar progress-bar-animated progress-bar-striped" 
+                             style="background: var(--gradient-primary); width: 0%" 
+                             id="analysisProgress"></div>
+                    </div>
+                    
+                    <!-- Fun Facts -->
+                    <div class="fun-facts">
+                        <p class="text-muted">
+                            <strong>💡 Did you know?</strong> 
+                            <span id="funFact">Good test coverage can reduce bugs by up to 80%!</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Loading Animation Styles */
+.loading-animation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 2rem 0;
+}
+
+.loading-circle {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--gradient-primary);
+    animation: loading-bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-circle:nth-child(1) { animation-delay: -0.32s; }
+.loading-circle:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes loading-bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1.0);
+    }
+}
+
+/* Progress Steps */
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2rem 0;
+    position: relative;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--border-color);
+    z-index: 1;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    opacity: 1;
+}
+
+.step.active .step-icon {
+    background: var(--gradient-primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+.step-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.step-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Fun Facts Animation */
+.fun-facts {
+    animation: fadeInUp 2s ease-in-out infinite;
+}
+
+@keyframes fadeInUp {
+    0%, 100% { opacity: 0.7; transform: translateY(5px); }
+    50% { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .progress-steps {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .step {
+        flex: 1;
+        min-width: calc(50% - 0.5rem);
+    }
+    
+    .progress-steps::before {
+        display: none;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBar = document.getElementById('analysisProgress');
+    const funFactElement = document.getElementById('funFact');
+    const steps = document.querySelectorAll('.step');
+    
+    const funFacts = [
+        "Good test coverage can reduce bugs by up to 80%! 🐛",
+        "Code reviews catch 60% more defects than testing alone! 👀",
+        "Documentation saves developers 30% of their time! 📚",
+        "Security scans prevent 90% of common vulnerabilities! 🛡️",
+        "Clean code is 50% faster to debug and maintain! ✨"
+    ];
+    
+    let progress = 0;
+    let currentStep = 0;
+    let factIndex = 0;
+    
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 100) progress = 100;
+        
+        progressBar.style.width = progress + '%';
+        
+        // Update active step
+        const newStep = Math.min(Math.floor(progress / 20), steps.length - 1);
+        if (newStep > currentStep) {
+            if (steps[currentStep]) steps[currentStep].classList.remove('active');
+            if (steps[newStep]) steps[newStep].classList.add('active');
+            currentStep = newStep;
+        }
+        
+        if (progress >= 100) {
+            clearInterval(progressInterval);
+        }
+    }, 200);
+    
+    // Rotate fun facts
+    setInterval(() => {
+        factIndex = (factIndex + 1) % funFacts.length;
+        funFactElement.textContent = funFacts[factIndex];
+    }, 3000);
+});
+</script>
+{% endblock %}

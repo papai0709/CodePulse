@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  codepulse-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: codepulse-dev
+    ports:
+      - "5050:5050"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - FLASK_APP=app.py
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      # Mount source code for live reloading
+      - .:/app
+      # Mount for logs
+      - ./logs:/app/logs
+      # Mount for configuration
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    networks:
+      - codepulse-dev-network
+    command: python app.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5050/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  codepulse-dev-network:
+    driver: bridge

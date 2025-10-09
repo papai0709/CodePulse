@@ -1,0 +1,80 @@
+<!-- Recommendations Tab Content -->
+<div class="row">
+    <div class="col-12">
+        {% if analysis.recommendations %}
+            {% for rec in analysis.recommendations %}
+            <div class="card border-0 shadow-sm mb-4 recommendation-card {{ rec.priority.lower() }}-priority">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <h5 class="card-title">
+                                <span class="badge bg-{{ 'danger' if rec.priority == 'Critical' else 'warning' if rec.priority == 'High' else 'info' if rec.priority == 'Medium' else 'secondary' }} me-2">
+                                    {{ rec.priority }}
+                                </span>
+                                {{ rec.title }}
+                            </h5>
+                            <span class="badge bg-light text-dark">{{ rec.category }}</span>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">
+                                <i class="fas fa-clock me-1"></i>{{ rec.estimated_effort }} effort
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-impact me-1"></i>{{ rec.impact }} impact
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <p class="card-text">{{ rec.description }}</p>
+                    
+                    <div class="mt-3">
+                        <h6><i class="fas fa-tasks me-2"></i>Action Items:</h6>
+                        <ul class="list-unstyled ms-3">
+                            {% for action in rec.actions %}
+                            <li class="mb-1">
+                                <i class="fas fa-arrow-right text-primary me-2"></i>{{ action }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                    <h4>Great Job!</h4>
+                    <p class="text-muted">No major recommendations found. Your repository is in good shape!</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Actions -->
+{% if analysis.recommendations %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 bg-light">
+            <div class="card-body">
+                <h6 class="card-title">
+                    <i class="fas fa-rocket me-2"></i>
+                    Quick Start Actions
+                </h6>
+                <p class="card-text text-muted">
+                    Here are the most impactful actions you can take right now:
+                </p>
+                <div class="d-flex flex-wrap gap-2">
+                    {% for rec in analysis.recommendations[:3] %}
+                    <button class="btn btn-outline-{{ 'danger' if rec.priority == 'Critical' else 'warning' if rec.priority == 'High' else 'primary' }} btn-sm">
+                        {{ rec.category }}: {{ rec.title }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

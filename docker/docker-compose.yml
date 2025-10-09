@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  codepulse:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: codepulse-app
+    ports:
+      - "5050:5050"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+    volumes:
+      # Mount for persistent logs (optional)
+      - ./logs:/app/logs
+      # Mount for configuration (optional)
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    networks:
+      - codepulse-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5050/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a reverse proxy (uncomment if needed)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: codepulse-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/ssl:ro
+  #   depends_on:
+  #     - codepulse
+  #   networks:
+  #     - codepulse-network
+  #   restart: unless-stopped
+
+networks:
+  codepulse-network:
+    driver: bridge
+
+volumes:
+  codepulse-logs:
+    driver: local

@@ -1,0 +1,202 @@
+<!-- Test Coverage Tab Content -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Coverage Metrics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-3 text-center">
+                        <div class="metric-card">
+                            <div class="metric-value text-{{ analysis.test_analysis.coverage_color }}">
+                                {{ analysis.test_analysis.coverage_metrics.overall }}%
+                            </div>
+                            <div class="metric-label">Overall Coverage</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="metric-card">
+                            <div class="metric-value text-info">
+                                {{ analysis.test_analysis.coverage_metrics.line_coverage }}%
+                            </div>
+                            <div class="metric-label">Line Coverage</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="metric-card">
+                            <div class="metric-value text-warning">
+                                {{ analysis.test_analysis.coverage_metrics.branch_coverage }}%
+                            </div>
+                            <div class="metric-label">Branch Coverage</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="metric-card">
+                            <div class="metric-value text-success">
+                                {{ analysis.test_analysis.coverage_metrics.function_coverage }}%
+                            </div>
+                            <div class="metric-label">Function Coverage</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h6 class="mb-3">Coverage Progress</h6>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Overall Coverage</span>
+                        <span>{{ analysis.test_analysis.coverage_metrics.overall }}%</span>
+                    </div>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar bg-{{ analysis.test_analysis.coverage_color }}" 
+                             style="width: {{ analysis.test_analysis.coverage_metrics.overall }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Line Coverage</span>
+                        <span>{{ analysis.test_analysis.coverage_metrics.line_coverage }}%</span>
+                    </div>
+                    <div class="progress" style="height: 15px;">
+                        <div class="progress-bar bg-info" 
+                             style="width: {{ analysis.test_analysis.coverage_metrics.line_coverage }}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Branch Coverage</span>
+                        <span>{{ analysis.test_analysis.coverage_metrics.branch_coverage }}%</span>
+                    </div>
+                    <div class="progress" style="height: 15px;">
+                        <div class="progress-bar bg-warning" 
+                             style="width: {{ analysis.test_analysis.coverage_metrics.branch_coverage }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-code me-2"></i>
+                    Test Structure
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <strong>Total Test Files:</strong> 
+                        <span class="badge bg-primary">{{ analysis.test_analysis.test_structure.total_files }}</span>
+                    </li>
+                    <li class="mb-2">
+                        <strong>Test Directories:</strong>
+                        {% for dir in analysis.test_analysis.test_structure.test_directories %}
+                            <span class="badge bg-secondary me-1">{{ dir }}</span>
+                        {% endfor %}
+                    </li>
+                    <li class="mb-2">
+                        <strong>Test Types:</strong>
+                        <ul class="mt-2">
+                            <li>Unit: {{ analysis.test_analysis.test_structure.test_types.unit }}</li>
+                            <li>Integration: {{ analysis.test_analysis.test_structure.test_types.integration }}</li>
+                            <li>E2E: {{ analysis.test_analysis.test_structure.test_types.e2e }}</li>
+                        </ul>
+                    </li>
+                    <li class="mb-2">
+                        <strong>Frameworks:</strong>
+                        {% if analysis.test_analysis.test_structure.frameworks %}
+                            {% for framework in analysis.test_analysis.test_structure.frameworks %}
+                                <span class="badge bg-info me-1">{{ framework }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">None detected</span>
+                        {% endif %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Uncovered Areas -->
+{% if analysis.test_analysis.uncovered_areas %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Uncovered Areas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>File</th>
+                                <th>Issue</th>
+                                <th>Priority</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for area in analysis.test_analysis.uncovered_areas %}
+                            <tr>
+                                <td><code>{{ area.file }}</code></td>
+                                <td>{{ area.description }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if area.priority == 'high' else 'warning' if area.priority == 'medium' else 'info' }}">
+                                        {{ area.priority|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Test Recommendations -->
+{% if analysis.test_analysis.recommendations %}
+<div class="row">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Test Coverage Recommendations
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for rec in analysis.test_analysis.recommendations %}
+                <div class="card border-0 bg-light mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <span class="badge bg-{{ 'danger' if rec.type == 'critical' else 'warning' if rec.type == 'warning' else 'info' }} me-2">
+                                {{ rec.type|title }}
+                            </span>
+                            {{ rec.title }}
+                        </h6>
+                        <p class="card-text">{{ rec.description }}</p>
+                        <small class="text-muted">
+                            <strong>Action:</strong> {{ rec.action }}
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

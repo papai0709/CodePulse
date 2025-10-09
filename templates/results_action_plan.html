@@ -1,0 +1,184 @@
+<!-- Action Plan Tab Content -->
+<div class="row">
+    <div class="col-12">
+        {% if analysis.action_plan %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-tasks me-2"></i>
+                        Prioritized Action Plan
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Follow this prioritized action plan to improve your repository systematically.
+                    </p>
+                </div>
+            </div>
+
+            {% for item in analysis.action_plan %}
+            <div class="action-item priority-{{ item.priority }}">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-2">
+                            <span class="badge bg-{{ 'danger' if item.priority <= 2 else 'warning' if item.priority <= 4 else 'info' }} me-2">
+                                Priority {{ item.priority }}
+                            </span>
+                            {{ item.title }}
+                        </h6>
+                        <span class="badge bg-light text-dark">{{ item.category }}</span>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>{{ item.timeline }}
+                        </small>
+                        <br>
+                        <small class="text-muted">
+                            <i class="fas fa-bullseye me-1"></i>{{ item.impact }} impact
+                        </small>
+                    </div>
+                </div>
+                
+                <p class="mb-3">{{ item.description }}</p>
+                
+                <div class="mb-3">
+                    <strong>Action Required:</strong>
+                    <p class="mb-0 ms-3">{{ item.action }}</p>
+                </div>
+                
+                <div class="progress mb-2" style="height: 8px;">
+                    <div class="progress-bar bg-secondary" style="width: 0%" title="Not started"></div>
+                </div>
+                <small class="text-muted">Status: Not started</small>
+            </div>
+            {% endfor %}
+            
+            <!-- Action Plan Summary -->
+            <div class="card border-0 bg-light mt-4">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Implementation Timeline
+                    </h6>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value text-danger">
+                                    {% set immediate_count = 0 %}
+                                    {% for item in analysis.action_plan %}
+                                        {% if item.priority <= 2 %}
+                                            {% set immediate_count = immediate_count + 1 %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ immediate_count }}
+                                </div>
+                                <div class="metric-label">Immediate</div>
+                                <small class="text-muted">1-2 days</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value text-warning">
+                                    {% set short_term_count = 0 %}
+                                    {% for item in analysis.action_plan %}
+                                        {% if item.priority > 2 and item.priority <= 4 %}
+                                            {% set short_term_count = short_term_count + 1 %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ short_term_count }}
+                                </div>
+                                <div class="metric-label">Short Term</div>
+                                <small class="text-muted">1-2 weeks</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value text-info">
+                                    {% set long_term_count = 0 %}
+                                    {% for item in analysis.action_plan %}
+                                        {% if item.priority > 4 %}
+                                            {% set long_term_count = long_term_count + 1 %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {{ long_term_count }}
+                                </div>
+                                <div class="metric-label">Long Term</div>
+                                <small class="text-muted">1+ months</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="metric-card">
+                                <div class="metric-value text-success">
+                                    {{ analysis.action_plan|length }}
+                                </div>
+                                <div class="metric-label">Total Items</div>
+                                <small class="text-muted">All priorities</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        {% else %}
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-thumbs-up text-success fa-3x mb-3"></i>
+                    <h4>No Action Items</h4>
+                    <p class="text-muted">Your repository doesn't have any urgent action items. Keep up the good work!</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Export Action Plan -->
+{% if analysis.action_plan %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 bg-light">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-1">
+                            <i class="fas fa-download me-2"></i>
+                            Export Action Plan
+                        </h6>
+                        <small class="text-muted">Save this action plan for tracking progress</small>
+                    </div>
+                    <button class="btn btn-primary" onclick="exportActionPlan()">
+                        <i class="fas fa-file-export me-1"></i>
+                        Export Plan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportActionPlan() {
+    const actionPlan = {{ analysis.action_plan | tojson | safe }};
+    let content = "# Action Plan for {{ analysis.metadata.repository }}\n\n";
+    content += "Generated on: {{ timestamp }}\n\n";
+    
+    actionPlan.forEach((item, index) => {
+        content += `## ${index + 1}. ${item.title}\n`;
+        content += `**Priority:** ${item.priority}\n`;
+        content += `**Category:** ${item.category}\n`;
+        content += `**Timeline:** ${item.timeline}\n`;
+        content += `**Impact:** ${item.impact}\n\n`;
+        content += `**Description:** ${item.description}\n\n`;
+        content += `**Action Required:** ${item.action}\n\n`;
+        content += "---\n\n";
+    });
+    
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '{{ analysis.metadata.repository.replace("/", "_") }}_action_plan.md';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
+{% endif %}
