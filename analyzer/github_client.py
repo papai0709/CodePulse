@@ -1,6 +1,7 @@
 import os
 import tempfile
 import shutil
+import subprocess
 from github import Github
 from git import Repo
 import requests
@@ -95,51 +96,99 @@ class GitHubClient:
     def _get_authenticated_repo_info(self, repo_path: str) -> Dict[str, Any]:
         """Get repository info using authenticated GitHub client"""
         try:
+            # Validate repo_path format
+            if not repo_path or '/' not in repo_path:
+                raise Exception(f"Invalid repository path format: {repo_path}")
+            
+            # Split and validate parts
+            path_parts = repo_path.split('/')
+            if len(path_parts) != 2:
+                raise Exception(f"Repository path must be in format 'owner/repo', got: {repo_path}")
+            
+            owner, repo_name = path_parts
+            if not owner or not repo_name:
+                raise Exception(f"Invalid owner or repository name in: {repo_path}")
+            
+            print(f"Fetching repository info for: {owner}/{repo_name}")
+            
             repo = self.github.get_repo(repo_path)
             
-            # Get languages
-            languages = repo.get_languages()
+            # Get languages with error handling
+            try:
+                languages = repo.get_languages()
+            except Exception as e:
+                print(f"Warning: Could not fetch languages: {e}")
+                languages = {}
             
-            # Get contributors
-            contributors = list(repo.get_contributors())
+            # Get contributors with error handling
+            try:
+                contributors = list(repo.get_contributors())
+            except Exception as e:
+                print(f"Warning: Could not fetch contributors: {e}")
+                contributors = []
             
-            # Get recent commits
-            commits = list(repo.get_commits()[:10])
+            # Get recent commits with error handling
+            try:
+                commits = list(repo.get_commits()[:10])
+            except Exception as e:
+                print(f"Warning: Could not fetch commits: {e}")
+                commits = []
             
-            # Get open issues
-            open_issues = list(repo.get_issues(state='open')[:20])
+            # Get open issues with error handling
+            try:
+                open_issues = list(repo.get_issues(state='open')[:20])
+            except Exception as e:
+                print(f"Warning: Could not fetch issues: {e}")
+                open_issues = []
             
             # Get repository stats
             stats = {
-                'stars': repo.stargazers_count,
-                'forks': repo.forks_count,
-                'open_issues': repo.open_issues_count,
-                'size': repo.size,
-                'created_at': repo.created_at,
-                'updated_at': repo.updated_at,
-                'default_branch': repo.default_branch,
-                'has_issues': repo.has_issues,
-                'has_projects': repo.has_projects,
-                'has_wiki': repo.has_wiki
+                'stars': getattr(repo, 'stargazers_count', 0),
+                'forks': getattr(repo, 'forks_count', 0),
+                'open_issues': getattr(repo, 'open_issues_count', 0),
+                'size': getattr(repo, 'size', 0),
+                'created_at': getattr(repo, 'created_at', None),
+                'updated_at': getattr(repo, 'updated_at', None),
+                'default_branch': getattr(repo, 'default_branch', 'main'),
+                'has_issues': getattr(repo, 'has_issues', False),
+                'has_projects': getattr(repo, 'has_projects', False),
+                'has_wiki': getattr(repo, 'has_wiki', False)
             }
             
+            # Get topics with error handling
+            try:
+                topics = repo.get_topics()
+            except Exception as e:
+                print(f"Warning: Could not fetch topics: {e}")
+                topics = []
+            
+            # Get license with error handling
+            try:
+                license_name = repo.license.name if repo.license else None
+            except Exception as e:
+                print(f"Warning: Could not fetch license: {e}")
+                license_name = None
+            
             return {
-                'name': repo.name,
-                'full_name': repo.full_name,
-                'description': repo.description,
-                'url': repo.html_url,
-                'clone_url': repo.clone_url,
+                'name': getattr(repo, 'name', ''),
+                'full_name': getattr(repo, 'full_name', ''),
+                'description': getattr(repo, 'description', ''),
+                'url': getattr(repo, 'html_url', ''),
+                'clone_url': getattr(repo, 'clone_url', ''),
                 'languages': languages,
                 'contributors_count': len(contributors),
-                'contributors': [c.login for c in contributors[:5]],
+                'contributors': [getattr(c, 'login', 'unknown') for c in contributors[:5]],
                 'recent_commits': len(commits),
                 'open_issues': len(open_issues),
                 'stats': stats,
-                'topics': repo.get_topics(),
-                'license': repo.license.name if repo.license else None
+                'topics': topics,
+                'license': license_name
             }
             
         except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Error in _get_authenticated_repo_info: {error_details}")
             raise Exception(f"Failed to fetch authenticated repository info: {str(e)}")
     
     def clone_repository(self, repo_path: str) -> Dict[str, str]:
@@ -149,14 +198,22 @@ class GitHubClient:
                 # For public repositories without token, construct clone URL directly
                 clone_url = f"https://github.com/{repo_path}.git"
             else:
-                repo = self.github.get_repo(repo_path)
-                clone_url = repo.clone_url
+                # For private repositories or when token is available, use authenticated clone URL
+                if self.token:
+                    # Use token authentication in the clone URL
+                    clone_url = f"https://{self.token}@github.com/{repo_path}.git"
+                else:
+                    # Fallback to regular clone URL (might fail for private repos)
+                    repo = self.github.get_repo(repo_path)
+                    clone_url = repo.clone_url
             
             # Create temporary directory
             temp_dir = tempfile.mkdtemp(prefix='repo_analyzer_')
             
             # Clone repository
             print(f"Cloning {repo_path} to {temp_dir}")
+            
+            # Use GitPython's clone_from with authenticated URL
             cloned_repo = Repo.clone_from(clone_url, temp_dir)
             
             return {
@@ -166,6 +223,9 @@ class GitHubClient:
             }
             
         except Exception as e:
+            # Clean up on failure
+            if 'temp_dir' in locals() and os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
             raise Exception(f"Failed to clone repository: {str(e)}")
     
     def get_file_content(self, repo_path: str, file_path: str, ref: str = None) -> Optional[str]:

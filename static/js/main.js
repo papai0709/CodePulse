@@ -15,8 +15,9 @@ function initializeThemeToggle() {
     const themeToggle = document.querySelector('.theme-toggle');
     const currentTheme = localStorage.getItem('theme') || 'light';
     
-    // Set initial theme
+    // Set initial theme on both html and body elements
     document.documentElement.setAttribute('data-theme', currentTheme);
+    document.body.setAttribute('data-theme', currentTheme);
     updateThemeIcon(currentTheme);
     
     if (themeToggle) {
@@ -24,7 +25,9 @@ function initializeThemeToggle() {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
+            // Set theme on both html and body elements
             document.documentElement.setAttribute('data-theme', newTheme);
+            document.body.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateThemeIcon(newTheme);
             

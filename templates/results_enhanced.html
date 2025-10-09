@@ -47,7 +47,18 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-lg bg-gradient-primary text-white">
-                <div class="card-body">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-white">
+                            <i class="fas fa-brain me-2"></i>AI Summary
+                        </h5>
+                        <button class="btn btn-link text-white p-0" type="button" data-bs-toggle="collapse" data-bs-target="#aiSummaryCollapse" aria-expanded="true" aria-controls="aiSummaryCollapse">
+                            <i class="fas fa-chevron-up" id="aiSummaryIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse show" id="aiSummaryCollapse">
+                    <div class="card-body pt-0">
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <h4 class="card-title mb-3">
@@ -64,10 +75,252 @@
                         </div>
                         <div class="col-md-4 text-center">
                             {% set ai_summary = analysis.get('ai_summary', {}) %}
-                            <div class="display-4 mb-2">{{ "%.1f"|format(ai_summary.get('overall_ai_score', 0)) }}/10</div>
+                            {% set overall_score = ai_summary.get('overall_ai_score', 0) %}
+                            <div class="display-4 mb-2">{{ "%.1f"|format(overall_score) }}/10</div>
                             <small>AI Confidence: {{ ai_summary.get('confidence_level', 'medium').title() }}</small>
                         </div>
                     </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detailed AI Score Breakdown -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            AI Score Breakdown & Analysis
+                        </h5>
+                        <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#aiBreakdownCollapse" aria-expanded="true" aria-controls="aiBreakdownCollapse">
+                            <i class="fas fa-chevron-up" id="aiBreakdownIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse show" id="aiBreakdownCollapse">
+                    <div class="card-body">
+                    <div class="alert alert-info border-0 mb-4">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Understanding Your AI Scores:</strong> Our AI engine analyzes your codebase across multiple dimensions to provide comprehensive insights and actionable recommendations for improvement.
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <!-- Overall Quality Assessment -->
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded bg-light-subtle">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-award text-primary me-1"></i>
+                                    Overall Quality
+                                </h6>
+                                {% set architecture_score = analysis.ai_insights.architecture.get('score', 7) %}
+                                {% set quality_score_raw = analysis.ai_insights.code_quality.get('score', 7) %}
+                                {% set performance_score = analysis.ai_insights.performance.get('score', 7) %}
+                                <!-- Convert percentage values (0-100) to 1-10 scale if needed -->
+                                {% set quality_score = (quality_score_raw / 10) | round(1) if quality_score_raw > 10 else quality_score_raw %}
+                                {% set architecture_score = (architecture_score / 10) | round(1) if architecture_score > 10 else architecture_score %}
+                                {% set performance_score = (performance_score / 10) | round(1) if performance_score > 10 else performance_score %}
+                                {% set calculated_overall = ((architecture_score + quality_score + performance_score) / 3) | round(1) %}
+                                {% set display_overall = ai_summary.get('overall_ai_score', calculated_overall) %}
+                                <div class="display-6 text-primary fw-bold">{{ "%.1f"|format(display_overall) }}/10</div>
+                                <small class="text-muted">
+                                    {% if display_overall >= 8.5 %}
+                                        🌟 Exceptional - Industry-leading codebase
+                                    {% elif display_overall >= 7.5 %}
+                                        ✅ Excellent - Well-architected and maintained
+                                    {% elif display_overall >= 6.5 %}
+                                        👍 Good - Minor improvements recommended
+                                    {% elif display_overall >= 5.0 %}
+                                        ⚠️ Fair - Several areas need attention
+                                    {% elif display_overall >= 3.5 %}
+                                        🔧 Needs Work - Significant improvements required
+                                    {% else %}
+                                        🚨 Critical - Major overhaul recommended
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Security Risk Assessment -->
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded bg-light-subtle">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-shield-alt text-warning me-1"></i>
+                                    Security Risk
+                                </h6>
+                                {% set security_risk = analysis.ai_insights.security.get('risk_score', 3) %}
+                                <div class="display-6 fw-bold
+                                    {% if security_risk < 3 %}text-success{% elif security_risk < 6 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ security_risk }}/10
+                                </div>
+                                <small class="text-muted">
+                                    {% if security_risk < 3 %}
+                                        🛡️ Low Risk - Strong security posture
+                                    {% elif security_risk < 6 %}
+                                        ⚠️ Medium Risk - Some vulnerabilities found
+                                    {% elif security_risk < 8 %}
+                                        🔥 High Risk - Multiple security issues
+                                    {% else %}
+                                        💥 Critical Risk - Immediate action required
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- Maintainability Index -->
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded bg-light-subtle">
+                                <h6 class="mb-2">
+                                    <i class="fas fa-wrench text-info me-1"></i>
+                                    Maintainability
+                                </h6>
+                                {% set maintainability = analysis.ai_insights.code_quality.get('maintainability', 8) %}
+                                <div class="display-6 text-info fw-bold">{{ maintainability }}/10</div>
+                                <small class="text-muted">
+                                    {% if maintainability >= 8 %}
+                                        🚀 Highly Maintainable - Easy to modify
+                                    {% elif maintainability >= 6 %}
+                                        ✅ Maintainable - Reasonable effort required
+                                    {% elif maintainability >= 4 %}
+                                        ⚠️ Challenging - Requires careful planning
+                                    {% else %}
+                                        🔧 Difficult - Major refactoring needed
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Score Explanations -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light-subtle mb-3">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-2">
+                                        <i class="fas fa-sitemap text-primary me-1"></i>
+                                        Architecture Score: {{ architecture_score }}/10
+                                    </h6>
+                                    <p class="card-text small mb-2">
+                                        <strong>What we analyzed:</strong> Structural design, modularity, separation of concerns, design patterns, and overall code organization.
+                                    </p>
+                                    <div class="text-muted small">
+                                        <strong>Your score means:</strong> 
+                                        {% if architecture_score >= 8 %}
+                                            Your codebase demonstrates excellent architectural principles with clear separation of concerns and well-implemented design patterns.
+                                        {% elif architecture_score >= 6 %}
+                                            Good architectural foundation with some opportunities for better structure and organization.
+                                        {% elif architecture_score >= 4 %}
+                                            Architecture needs attention - consider refactoring for better modularity and clearer separation of concerns.
+                                        {% else %}
+                                            Significant architectural issues detected - major restructuring recommended for long-term maintainability.
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light-subtle mb-3">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-2">
+                                        <i class="fas fa-code text-success me-1"></i>
+                                        Code Quality: {{ quality_score }}/10
+                                    </h6>
+                                    <p class="card-text small mb-2">
+                                        <strong>What we analyzed:</strong> Code readability, best practices adherence, documentation quality, naming conventions, and coding standards.
+                                    </p>
+                                    <div class="text-muted small">
+                                        <strong>Your score means:</strong>
+                                        {% if quality_score >= 8 %}
+                                            Your code is exceptionally well-written, highly readable, and consistently follows best practices.
+                                        {% elif quality_score >= 6 %}
+                                            Good code quality with minor improvements needed in documentation or coding style.
+                                        {% elif quality_score >= 4 %}
+                                            Code quality needs improvement - focus on readability, documentation, and consistent best practices.
+                                        {% else %}
+                                            Significant code quality issues - extensive cleanup and standardization needed.
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light-subtle mb-3">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-2">
+                                        <i class="fas fa-tachometer-alt text-info me-1"></i>
+                                        Performance: {{ performance_score }}/10
+                                    </h6>
+                                    <p class="card-text small mb-2">
+                                        <strong>What we analyzed:</strong> Algorithm efficiency, resource usage, potential bottlenecks, database queries, and runtime complexity.
+                                    </p>
+                                    <div class="text-muted small">
+                                        <strong>Your score means:</strong>
+                                        {% if performance_score >= 8 %}
+                                            Excellent performance characteristics with efficient algorithms and optimal resource utilization.
+                                        {% elif performance_score >= 6 %}
+                                            Good performance with minor optimization opportunities in specific areas.
+                                        {% elif performance_score >= 4 %}
+                                            Performance issues detected - optimization needed to improve response times and resource usage.
+                                        {% else %}
+                                            Critical performance problems - immediate optimization required for acceptable user experience.
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light-subtle mb-3">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-2">
+                                        <i class="fas fa-cogs text-secondary me-1"></i>
+                                        Complexity: {{ analysis.ai_insights.architecture.get('complexity_score', 5) }}/10
+                                    </h6>
+                                    <p class="card-text small mb-2">
+                                        <strong>What we analyzed:</strong> Cyclomatic complexity, nesting levels, cognitive load, and overall code complexity metrics.
+                                    </p>
+                                    <div class="text-muted small">
+                                        <strong>Your score means:</strong>
+                                        {% set complexity = analysis.ai_insights.architecture.get('complexity_score', 5) %}
+                                        {% if complexity < 3 %}
+                                            Very low complexity - code is simple, elegant, and extremely easy to understand and maintain.
+                                        {% elif complexity < 5 %}
+                                            Low complexity - well-structured code that's easy to follow and modify.
+                                        {% elif complexity < 7 %}
+                                            Moderate complexity - generally manageable but some areas may benefit from simplification.
+                                        {% elif complexity < 9 %}
+                                            High complexity - code is difficult to understand and maintain, refactoring recommended.
+                                        {% else %}
+                                            Very high complexity - immediate simplification required for any meaningful maintenance.
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-primary border-0 mt-3">
+                        <i class="fas fa-robot me-2"></i>
+                        <strong>AI Confidence Level: {{ ai_summary.get('confidence_level', 'medium').title() }}</strong>
+                        <p class="mb-0 mt-1 small">
+                            {% set confidence = ai_summary.get('confidence_level', 'medium').lower() %}
+                            {% if confidence == 'high' %}
+                                Our AI analysis has high confidence in these scores based on comprehensive code pattern analysis and extensive repository evaluation.
+                            {% elif confidence == 'medium' %}
+                                Our AI analysis has moderate confidence in these scores. Some areas may require additional manual review for complete accuracy.
+                            {% else %}
+                                Our AI analysis has lower confidence in these scores. Consider running a more detailed analysis or manual code review for critical decisions.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -75,7 +328,21 @@
     {% endif %}
 
     <!-- Summary Cards -->
-    <div class="row mb-4">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Quick Overview
+                </h5>
+                <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#summaryCardsCollapse" aria-expanded="true" aria-controls="summaryCardsCollapse">
+                    <i class="fas fa-chevron-up" id="summaryCardsIcon"></i>
+                </button>
+            </div>
+        </div>
+        <div class="collapse show" id="summaryCardsCollapse">
+            <div class="card-body p-0">
+                <div class="row mb-4 m-0">
         <div class="col-lg-3 col-md-6 mb-3">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body text-center">
@@ -125,6 +392,9 @@
                 </div>
             </div>
         </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- AI Insights Tabs (if AI enabled) -->
@@ -168,7 +438,12 @@
                             {% if analysis.ai_insights.architecture %}
                             <div class="row">
                                 <div class="col-md-6">
-                                    <h6>Complexity Analysis</h6>
+                                    <h6>
+                                        Complexity Analysis
+                                        <i class="fas fa-info-circle text-muted ms-1" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Measures code complexity based on structure, dependencies, and maintainability. Lower scores indicate simpler, more maintainable code."></i>
+                                    </h6>
                                     <div class="progress mb-3">
                                         {% set complexity = analysis.ai_insights.architecture.get('complexity_score', 5) %}
                                         <div class="progress-bar bg-{{ 'success' if complexity < 5 else 'warning' if complexity < 7 else 'danger' }}" 
@@ -178,9 +453,15 @@
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <h6>Architecture Score</h6>
+                                    <h6>
+                                        Architecture Score
+                                        <i class="fas fa-info-circle text-muted ms-1" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Overall assessment of the architectural design including patterns, modularity, and structural organization. Higher scores indicate better architecture."></i>
+                                    </h6>
                                     <div class="progress mb-3">
-                                        {% set arch_score = analysis.ai_insights.architecture.get('score', 7) %}
+                                        {% set arch_score_raw = analysis.ai_insights.architecture.get('score', 7) %}
+                                        {% set arch_score = (arch_score_raw / 10) | round(1) if arch_score_raw > 10 else arch_score_raw %}
                                         <div class="progress-bar bg-primary" style="width: {{ (arch_score/10*100)|round }}%">
                                             {{ arch_score }}/10
                                         </div>
@@ -211,16 +492,27 @@
                             {% if analysis.ai_insights.code_quality %}
                             <div class="row">
                                 <div class="col-md-6">
-                                    <h6>Quality Score</h6>
+                                    <h6>
+                                        Quality Score
+                                        <i class="fas fa-info-circle text-muted ms-1" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Overall code quality assessment based on readability, structure, and best practices. Higher scores indicate better code quality."></i>
+                                    </h6>
                                     <div class="progress mb-3">
-                                        {% set quality_score = analysis.ai_insights.code_quality.get('score', 7) %}
+                                        {% set quality_score_raw = analysis.ai_insights.code_quality.get('score', 7) %}
+                                        {% set quality_score = (quality_score_raw / 10) | round(1) if quality_score_raw > 10 else quality_score_raw %}
                                         <div class="progress-bar bg-success" style="width: {{ (quality_score/10*100)|round }}%">
                                             {{ quality_score }}/10
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <h6>Maintainability</h6>
+                                    <h6>
+                                        Maintainability
+                                        <i class="fas fa-info-circle text-muted ms-1" 
+                                           data-bs-toggle="tooltip" 
+                                           title="How easy it is to modify, update, and extend the codebase. Higher scores indicate easier maintenance and future development."></i>
+                                    </h6>
                                     <div class="progress mb-3">
                                         {% set maintainability = analysis.ai_insights.code_quality.get('maintainability', 8) %}
                                         <div class="progress-bar bg-info" style="width: {{ (maintainability/10*100)|round }}%">
@@ -270,7 +562,7 @@
                                 <h6>Security Recommendations</h6>
                                 <ul class="list-group list-group-flush">
                                     {% for rec in analysis.ai_insights.security.get('recommendations', [])[:5] %}
-                                    <li class="list-group-item border-0 px-0">
+                                    <li class="list-group-item border-0 px-0 bg-transparent">
                                         <i class="fas fa-lock text-warning me-2"></i>
                                         {{ rec.get('title', rec) if rec is mapping else rec }}
                                     </li>
@@ -290,16 +582,27 @@
                             {% if analysis.ai_insights.performance %}
                             <div class="row">
                                 <div class="col-md-6">
-                                    <h6>Performance Score</h6>
+                                    <h6>
+                                        Performance Score
+                                        <i class="fas fa-info-circle text-muted ms-1" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Overall performance assessment based on efficiency, speed, and resource usage. Higher scores indicate better performance."></i>
+                                    </h6>
                                     <div class="progress mb-3">
-                                        {% set perf_score = analysis.ai_insights.performance.get('score', 7) %}
+                                        {% set perf_score_raw = analysis.ai_insights.performance.get('score', 7) %}
+                                        {% set perf_score = (perf_score_raw / 10) | round(1) if perf_score_raw > 10 else perf_score_raw %}
                                         <div class="progress-bar bg-success" style="width: {{ (perf_score/10*100)|round }}%">
                                             {{ perf_score }}/10
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
-                                    <h6>Optimization Potential</h6>
+                                    <h6>
+                                        Optimization Potential
+                                        <i class="fas fa-info-circle text-muted ms-1" 
+                                           data-bs-toggle="tooltip" 
+                                           title="Indicates how much the performance can be improved through optimization. Higher scores suggest more optimization opportunities."></i>
+                                    </h6>
                                     <div class="progress mb-3">
                                         {% set opt_potential = analysis.ai_insights.performance.get('optimization_potential', 6) %}
                                         <div class="progress-bar bg-warning" style="width: {{ (opt_potential/10*100)|round }}%">
@@ -331,6 +634,7 @@
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
         </div>
     </div>
@@ -342,12 +646,18 @@
         <div class="col-12">
             <div class="card border-0 shadow-lg">
                 <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-magic me-2"></i>
-                        AI-Powered Action Plan
-                    </h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-magic me-2"></i>
+                            AI-Powered Action Plan
+                        </h5>
+                        <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#enhancedRecommendationsCollapse" aria-expanded="true" aria-controls="enhancedRecommendationsCollapse">
+                            <i class="fas fa-chevron-up" id="enhancedRecommendationsIcon"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body">
+                <div class="collapse show" id="enhancedRecommendationsCollapse">
+                    <div class="card-body">
                     <!-- Priority Actions -->
                     {% if analysis.enhanced_recommendations.priority_actions %}
                     <h6 class="text-danger mb-3">
@@ -402,15 +712,30 @@
                     </div>
                     {% endif %}
                 </div>
+                </div>
             </div>
         </div>
     </div>
     {% endif %}
 
     <!-- Traditional Analysis Tabs -->
-    <div class="row">
-        <div class="col-12">
-            <ul class="nav nav-tabs mb-3" id="analysisTabs" role="tablist">
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Detailed Analysis
+                </h5>
+                <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#traditionalAnalysisCollapse" aria-expanded="false" aria-controls="traditionalAnalysisCollapse">
+                    <i class="fas fa-chevron-down" id="traditionalAnalysisIcon"></i>
+                </button>
+            </div>
+        </div>
+        <div class="collapse" id="traditionalAnalysisCollapse">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12">
+                        <ul class="nav nav-tabs mb-3" id="analysisTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
                         <i class="fas fa-chart-pie me-1"></i>Overview
@@ -486,6 +811,9 @@
                 </div>
             </div>
         </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -542,6 +870,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
     {% endif %}
+    
+    // Handle collapse/expand icons for all collapsible sections
+    const collapseElements = [
+        { collapse: 'aiSummaryCollapse', icon: 'aiSummaryIcon' },
+        { collapse: 'aiBreakdownCollapse', icon: 'aiBreakdownIcon' },
+        { collapse: 'summaryCardsCollapse', icon: 'summaryCardsIcon' },
+        { collapse: 'aiInsightsCollapse', icon: 'aiInsightsIcon' },
+        { collapse: 'enhancedRecommendationsCollapse', icon: 'enhancedRecommendationsIcon' },
+        { collapse: 'traditionalAnalysisCollapse', icon: 'traditionalAnalysisIcon' }
+    ];
+    
+    collapseElements.forEach(element => {
+        const collapseEl = document.getElementById(element.collapse);
+        const iconEl = document.getElementById(element.icon);
+        
+        if (collapseEl && iconEl) {
+            collapseEl.addEventListener('show.bs.collapse', function() {
+                iconEl.classList.remove('fa-chevron-down');
+                iconEl.classList.add('fa-chevron-up');
+            });
+            
+            collapseEl.addEventListener('hide.bs.collapse', function() {
+                iconEl.classList.remove('fa-chevron-up');
+                iconEl.classList.add('fa-chevron-down');
+            });
+        }
+    });
 });
 </script>
 {% endblock %}

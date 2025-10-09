@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, jsonify, flash, redirect, url
 import os
 import json
 import asyncio
+import logging
 from datetime import datetime
 from analyzer.github_client import GitHubClient
 from analyzer.test_analyzer import TestAnalyzer
@@ -14,13 +15,26 @@ from analyzer.issue_detector import IssueDetector
 from analyzer.report_generator import ReportGenerator
 from config import Config
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('codepulse.log', mode='a')
+    ]
+)
+logger = logging.getLogger(__name__)
+
 # Try to import AI components (optional)
 try:
     from analyzer.ai_analyzer import AIAnalyzer
     from analyzer.enhanced_report_generator import EnhancedReportGenerator
     AI_AVAILABLE = True
+    logger.info("🧠 AI components loaded successfully")
 except ImportError:
     AI_AVAILABLE = False
+    logger.warning("⚠️  AI components not available. Running in standard mode only.")
     print("⚠️  AI components not available. Running in standard mode only.")
 
 app = Flask(__name__)
@@ -74,57 +88,113 @@ def analyze_repository():
         if enable_ai and AI_AVAILABLE:
             report_generator = EnhancedReportGenerator(github_token)
             analysis_mode = "🧠 AI-Enhanced"
+            logger.info(f"🧠 Initializing AI-Enhanced analysis for {repo_path}")
         else:
             report_generator = ReportGenerator()
             analysis_mode = "📊 Standard"
+            logger.info(f"📊 Initializing Standard analysis for {repo_path}")
         
+        logger.info(f"{analysis_mode} Analysis: {repo_path} ({'public' if is_public else 'private'})")
         print(f"{analysis_mode} Analysis: {repo_path} ({'public' if is_public else 'private'})")
         
-        # Fetch repository information
-        repo_info = github_client.get_repository_info(repo_path)
+        # Fetch repository information with detailed error handling
+        try:
+            logger.info(f"🔍 Fetching repository information for: {repo_path}")
+            print(f"Fetching repository information for: {repo_path}")
+            repo_info = github_client.get_repository_info(repo_path)
+            logger.info(f"✅ Repository info fetched successfully: {repo_info.get('name', 'Unknown')} - Language: {repo_info.get('language', 'N/A')}, Stars: {repo_info.get('stargazers_count', 0)}")
+            print(f"Repository info fetched successfully: {repo_info.get('name', 'Unknown')}")
+        except Exception as e:
+            error_msg = f"Failed to fetch repository information: {str(e)}"
+            logger.error(f"❌ {error_msg}")
+            print(f"Error: {error_msg}")
+            flash(error_msg, 'error')
+            return redirect(url_for('index'))
         
         # Clone and analyze repository
+        logger.info(f"📥 Starting repository clone for {repo_path}")
         repo_data = github_client.clone_repository(repo_path)
+        logger.info(f"✅ Repository cloned successfully to {repo_data['local_path']}")
         
         # Analyze test coverage
+        logger.info(f"🧪 Starting test coverage analysis")
         coverage_results = test_analyzer.analyze_coverage(repo_data['local_path'])
+        logger.info(f"✅ Test coverage analysis completed - Coverage: {coverage_results.get('coverage_percentage', 0)}%")
         
         # Detect issues
+        logger.info(f"🔍 Starting issue detection")
         issues = issue_detector.detect_issues(repo_data['local_path'], repo_info)
+        logger.info(f"✅ Issue detection completed - Critical: {len(issues.get('critical_issues', []))}, Warnings: {len(issues.get('warnings', []))}")
         
         # Generate report (enhanced or standard)
         if enable_ai and AI_AVAILABLE:
+            logger.info(f"🧠 Starting AI-Enhanced report generation")
             # Run async AI analysis
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
+                start_time = datetime.now()
                 analysis_report = loop.run_until_complete(
                     report_generator.generate_enhanced_report(
                         repo_info, coverage_results, issues, enable_ai=True
                     )
                 )
+                end_time = datetime.now()
+                duration = (end_time - start_time).total_seconds()
+                logger.info(f"✅ AI-Enhanced report generation completed in {duration:.2f} seconds")
+                
+                # Log AI insights availability
+                if 'ai_insights' in analysis_report:
+                    ai_insights = analysis_report['ai_insights']
+                    logger.info(f"🧠 AI Insights generated:")
+                    if 'architecture' in ai_insights:
+                        arch_score = ai_insights['architecture'].get('architecture_score', 'N/A')
+                        logger.info(f"  - Architecture Score: {arch_score}")
+                    if 'code_quality' in ai_insights:
+                        quality_score = ai_insights['code_quality'].get('score', 'N/A')
+                        logger.info(f"  - Code Quality Score: {quality_score}")
+                    if 'security' in ai_insights:
+                        security_score = ai_insights['security'].get('score', 'N/A')
+                        logger.info(f"  - Security Score: {security_score}")
+                else:
+                    logger.warning("⚠️ No AI insights found in analysis report")
+                    
+            except Exception as e:
+                logger.error(f"❌ AI-Enhanced report generation failed: {str(e)}")
+                raise
             finally:
                 loop.close()
         else:
+            logger.info(f"📊 Starting Standard report generation")
+            start_time = datetime.now()
             analysis_report = report_generator.generate_report(
                 repo_info, coverage_results, issues
             )
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            logger.info(f"✅ Standard report generation completed in {duration:.2f} seconds")
         
         # Cleanup temporary directory
+        logger.info(f"🧹 Cleaning up temporary directory: {repo_data['local_path']}")
         github_client.cleanup_temp_directory(repo_data['local_path'])
         
         # Choose template based on AI enhancement
         has_ai_insights = enable_ai and AI_AVAILABLE and 'ai_insights' in analysis_report
         template = 'results_enhanced.html' if has_ai_insights else 'results.html'
+        logger.info(f"📄 Rendering template: {template} (AI insights: {has_ai_insights})")
+        
+        total_duration = (datetime.now() - datetime.strptime(timestamp := datetime.now().strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')).total_seconds()
+        logger.info(f"🎉 Analysis completed successfully for {repo_path}")
         
         return render_template(template, 
                              repo_path=repo_path,
                              analysis=analysis_report,
                              ai_enabled=enable_ai and AI_AVAILABLE,
                              ai_available=AI_AVAILABLE,
-                             timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                             timestamp=timestamp)
         
     except Exception as e:
+        logger.error(f"❌ Analysis error for {repo_path}: {str(e)}", exc_info=True)
         print(f"Analysis error: {str(e)}")
         flash(f'Analysis failed: {str(e)}', 'error')
         return redirect(url_for('index'))

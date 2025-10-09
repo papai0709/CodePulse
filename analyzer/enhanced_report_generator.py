@@ -7,8 +7,12 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import json
 import asyncio
+import logging
 from .report_generator import ReportGenerator
 from .ai_analyzer import AIAnalyzer
+
+# Configure logger for Enhanced Report Generator
+logger = logging.getLogger(__name__)
 
 class EnhancedReportGenerator(ReportGenerator):
     """Enhanced report generator with AI insights and recommendations"""
@@ -16,31 +20,45 @@ class EnhancedReportGenerator(ReportGenerator):
     def __init__(self, github_token: Optional[str] = None):
         super().__init__()
         self.ai_analyzer = AIAnalyzer(github_token)
+        logger.info(f"🧠 Enhanced Report Generator initialized with AI support: {bool(github_token)}")
         
     async def generate_enhanced_report(self, repo_info: Dict[str, Any], 
                                      coverage_results: Dict[str, Any], 
                                      issues: Dict[str, Any],
                                      enable_ai: bool = False) -> Dict[str, Any]:
         """Generate comprehensive analysis report with optional AI insights"""
+        repo_name = repo_info.get('name', 'Unknown')
+        logger.info(f"📊 Generating enhanced report for {repo_name} (AI enabled: {enable_ai})")
         
         # Generate base report
+        logger.info("📋 Generating base report")
         base_report = self.generate_report(repo_info, coverage_results, issues)
+        logger.info("✅ Base report generated successfully")
         
         # Add AI insights if enabled
         if enable_ai:
             try:
+                logger.info("🧠 Starting AI insights generation")
                 ai_insights = await self._generate_ai_insights(
                     repo_info, coverage_results, issues
                 )
                 base_report['ai_insights'] = ai_insights
+                logger.info(f"✅ AI insights generated with {len(ai_insights)} components")
+                
+                logger.info("💡 Generating AI recommendations")
                 base_report['enhanced_recommendations'] = await self._generate_ai_recommendations(
                     base_report, ai_insights
                 )
+                logger.info("✅ AI recommendations generated")
+                
                 base_report['ai_enabled'] = True
+                logger.info(f"🎉 Enhanced report completed successfully for {repo_name}")
             except Exception as e:
+                logger.error(f"❌ AI analysis failed for {repo_name}: {str(e)}", exc_info=True)
                 base_report['ai_error'] = f"AI analysis failed: {str(e)}"
                 base_report['ai_enabled'] = False
         else:
+            logger.info("📊 AI features disabled, using standard report")
             base_report['ai_enabled'] = False
             
         return base_report
@@ -49,48 +67,49 @@ class EnhancedReportGenerator(ReportGenerator):
                                    coverage_results: Dict[str, Any], 
                                    issues: Dict[str, Any]) -> Dict[str, Any]:
         """Generate AI-powered insights about the repository"""
+        repo_name = repo_info.get('name', 'Unknown')
+        logger.info(f"🔍 Generating AI insights for {repo_name}")
         
         insights = {}
         
         try:
             # Architecture analysis
+            logger.info("🏗️ Starting architecture analysis")
             insights['architecture'] = await self.ai_analyzer.analyze_architecture(
-                repo_info.get('file_structure', {}),
-                repo_info.get('languages', {})
+                repo_info, coverage_results, issues
             )
+            logger.info(f"✅ Architecture analysis completed - Score: {insights['architecture'].get('architecture_score', 'N/A')}")
             
             # Code quality insights
+            logger.info("🔍 Starting code quality analysis")
+            # Code quality insights
+            logger.info("🔍 Starting code quality analysis")
             insights['code_quality'] = await self.ai_analyzer.analyze_code_quality(
                 issues,
                 coverage_results
             )
+            logger.info(f"✅ Code quality analysis completed - Score: {insights['code_quality'].get('score', 'N/A')}")
             
             # Performance analysis
+            logger.info("⚡ Starting performance analysis")
             insights['performance'] = await self.ai_analyzer.analyze_performance_patterns(
                 repo_info.get('file_structure', {}),
                 issues
             )
+            logger.info(f"✅ Performance analysis completed - Score: {insights['performance'].get('score', 'N/A')}")
             
             # Security assessment
+            logger.info("🔒 Starting security analysis")
             insights['security'] = await self.ai_analyzer.analyze_security(
                 issues,
                 repo_info.get('dependencies', [])
             )
+            logger.info(f"✅ Security analysis completed - Risk Score: {insights['security'].get('risk_score', 'N/A')}")
             
-            # Best practices evaluation
-            insights['best_practices'] = await self.ai_analyzer.evaluate_best_practices(
-                repo_info,
-                coverage_results,
-                issues
-            )
-            
-            # Technology recommendations
-            insights['technology_stack'] = await self.ai_analyzer.analyze_technology_stack(
-                repo_info.get('languages', {}),
-                repo_info.get('dependencies', [])
-            )
+            logger.info(f"✅ All AI insights generated successfully")
             
         except Exception as e:
+            logger.error(f"❌ Failed to generate AI insights: {str(e)}", exc_info=True)
             insights['error'] = f"Failed to generate AI insights: {str(e)}"
             
         return insights

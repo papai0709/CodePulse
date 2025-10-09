@@ -82,6 +82,27 @@ body {
     transition: all 0.3s ease;
 }
 
+/* Ensure light theme is default when no theme attribute */
+body:not([data-theme="dark"]) {
+    --primary-color: #3b82f6;
+    --primary-dark: #2563eb;
+    --secondary-color: #60a5fa;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #0ea5e9;
+    --dark-color: #1e293b;
+    --light-color: #f8fafc;
+    
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+}
+
 /* Theme Toggle Button */
 .theme-toggle {
     position: fixed;
@@ -223,6 +244,35 @@ body {
     color: var(--text-muted) !important;
 }
 
+/* Bootstrap Text Utilities - Theme Aware */
+.text-success {
+    color: var(--success-color) !important;
+}
+
+.text-warning {
+    color: var(--warning-color) !important;
+}
+
+.text-danger {
+    color: var(--danger-color) !important;
+}
+
+.text-info {
+    color: var(--info-color) !important;
+}
+
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+.text-dark {
+    color: var(--text-primary) !important;
+}
+
 /* Colorful Card Variants */
 .card.border-success {
     border-left: 4px solid var(--success-color);
@@ -332,6 +382,96 @@ body {
 
 .badge.bg-low {
     background: var(--gradient-info) !important;
+    color: white !important;
+}
+
+/* Bootstrap Badge Color Overrides - Theme Aware */
+.badge.bg-success {
+    background: var(--success-color) !important;
+    color: white !important;
+}
+
+.badge.bg-warning {
+    background: var(--warning-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.badge.bg-danger {
+    background: var(--danger-color) !important;
+    color: white !important;
+}
+
+.badge.bg-info {
+    background: var(--info-color) !important;
+    color: white !important;
+}
+
+.badge.bg-primary {
+    background: var(--primary-color) !important;
+    color: white !important;
+}
+
+.badge.bg-secondary {
+    background: var(--text-secondary) !important;
+    color: white !important;
+}
+
+/* Health Score Badge - Light Theme Visibility Fix */
+body:not([data-theme="dark"]) .badge {
+    color: var(--text-primary) !important;
+}
+
+body:not([data-theme="dark"]) .badge.bg-success {
+    background: var(--success-color) !important;
+    color: white !important;
+}
+
+body:not([data-theme="dark"]) .badge.bg-warning {
+    background: var(--warning-color) !important;
+    color: var(--gray-900) !important;
+}
+
+body:not([data-theme="dark"]) .badge.bg-danger {
+    background: var(--danger-color) !important;
+    color: white !important;
+}
+
+body:not([data-theme="dark"]) .badge.bg-info {
+    background: var(--info-color) !important;
+    color: white !important;
+}
+
+body:not([data-theme="dark"]) .badge.bg-primary {
+    background: var(--primary-color) !important;
+    color: white !important;
+}
+
+[data-theme="light"] .badge {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .badge.bg-success {
+    background: var(--success-color) !important;
+    color: white !important;
+}
+
+[data-theme="light"] .badge.bg-warning {
+    background: var(--warning-color) !important;
+    color: var(--gray-900) !important;
+}
+
+[data-theme="light"] .badge.bg-danger {
+    background: var(--danger-color) !important;
+    color: white !important;
+}
+
+[data-theme="light"] .badge.bg-info {
+    background: var(--info-color) !important;
+    color: white !important;
+}
+
+[data-theme="light"] .badge.bg-primary {
+    background: var(--primary-color) !important;
     color: white !important;
 }
 
@@ -512,10 +652,36 @@ body {
     font-size: 2.5rem;
     font-weight: bold;
     margin-bottom: 0.5rem;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text-primary);
+}
+
+/* Specific color overrides for metric values */
+.metric-value.text-success {
+    color: var(--success-color) !important;
+}
+
+.metric-value.text-warning {
+    color: var(--warning-color) !important;
+}
+
+.metric-value.text-danger {
+    color: var(--danger-color) !important;
+}
+
+.metric-value.text-info {
+    color: var(--info-color) !important;
+}
+
+.metric-value.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.metric-value.text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+.metric-value.text-dark {
+    color: var(--text-primary) !important;
 }
 
 .metric-label {
@@ -821,4 +987,151 @@ body {
     0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
     70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
     100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+}
+
+/* Theme-Adaptive Badge for Dark Mode Support */
+.badge-theme-adaptive {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color);
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+    border-radius: 8px;
+    margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.badge-theme-adaptive:hover {
+    background-color: var(--bg-primary) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+/* Light theme specific styling */
+body:not([data-theme="dark"]) .badge-theme-adaptive {
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
+    border: 1px solid #e2e8f0;
+}
+
+body:not([data-theme="dark"]) .badge-theme-adaptive:hover {
+    background-color: #e2e8f0 !important;
+}
+
+/* Dark Theme Fixes */
+[data-theme="dark"] .list-group-item {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .list-group-item-action:hover {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card-header {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Tooltip dark mode fix */
+[data-theme="dark"] .tooltip .tooltip-inner {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .tooltip.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: var(--border-color);
+}
+
+[data-theme="dark"] .tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .tooltip.bs-tooltip-start .tooltip-arrow::before {
+    border-left-color: var(--border-color);
+}
+
+[data-theme="dark"] .tooltip.bs-tooltip-end .tooltip-arrow::before {
+    border-right-color: var(--border-color);
+}
+
+/* Collapsible Section Styles */
+.card-header .btn-link {
+    color: var(--text-primary);
+    text-decoration: none;
+    border: none;
+    background: none;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.card-header .btn-link:hover {
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+.card-header .btn-link:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+.card-header .btn-link i {
+    transition: transform 0.3s ease;
+    font-size: 1.1rem;
+}
+
+/* Smooth collapse animations */
+.collapsing {
+    transition: height 0.35s ease;
+}
+
+.collapse.show {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover effects for collapsible headers */
+.card-header:hover {
+    background-color: var(--bg-tertiary) !important;
+    transition: background-color 0.3s ease;
+}
+
+[data-theme="dark"] .card-header:hover {
+    background-color: var(--dark-300) !important;
+}
+
+/* Enhanced card styling for collapsible sections */
+.card.shadow-sm {
+    transition: box-shadow 0.3s ease;
+}
+
+.card.shadow-sm:hover {
+    box-shadow: var(--shadow-lg);
+}
+
+/* Section header styling improvements */
+.card-header h5 {
+    font-weight: 600;
+    letter-spacing: 0.025em;
 }

@@ -34,8 +34,8 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center">
                     <div class="display-6 mb-2">
-                        <span class="badge bg-{{ analysis.summary.status_color }} fs-4">
-                            {{ analysis.summary.health_score }}%
+                        <span class="badge bg-{{ analysis.test_analysis.coverage_color  }} fs-4">
+                            {{ analysis.test_analysis.coverage_metrics.overall}}%
                         </span>
                     </div>
                     <h6 class="card-title">Health Score</h6>
