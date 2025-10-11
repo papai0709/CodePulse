@@ -28,24 +28,39 @@ A comprehensive, intelligent tool that analyzes GitHub repositories for test cov
 #### Linux/Mac
 ```bash
 # Start the application
-./start_app.sh
+./scripts/deployment/start_app.sh
 
 # Stop the application  
-./stop_app.sh
+./scripts/deployment/stop_app.sh
+
+# Monitor application logs
+./scripts/deployment/monitor_logs.sh
 ```
 
 #### Windows
 ```cmd
 # Start the application
-start_app.bat
+scripts\deployment\start_app.bat
 
 # Stop the application
-stop_app.bat
+scripts\deployment\stop_app.bat
 ```
 
 ### 🐳 Docker Deployment (Recommended)
 
-#### Quick Docker Start
+#### Super Quick Start
+```bash
+# Start CodePulse with Docker (from project root)
+./docker-quick.sh
+
+# View logs
+./docker-quick.sh logs
+
+# Stop application
+./docker-quick.sh stop
+```
+
+#### Advanced Docker Management
 ```bash
 # Production mode
 ./docker/docker-manage.sh run
@@ -55,6 +70,9 @@ stop_app.bat
 
 # Check status
 ./docker/docker-manage.sh status
+
+# Or use Docker Compose directly
+cd docker && docker compose up -d
 ```
 
 #### Docker Requirements

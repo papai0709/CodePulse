@@ -41,21 +41,21 @@ class AIAnalyzer:
         {file_content[:2000]}  # Limit content size
         ```
         
-        Provide analysis in JSON format with scores on 1-10 scale:
+        Provide analysis in JSON format with scores on 1-10 scale (provide actual analysis, not examples):
         {{
-            "quality_score": 8.5,
+            "quality_score": [ANALYZE_AND_SCORE_BASED_ON_CODE_QUALITY],
             "issues": [
                 {{
-                    "type": "performance",
-                    "severity": "medium", 
-                    "line": 10,
-                    "description": "Issue description",
-                    "suggestion": "Improvement suggestion"
+                    "type": "performance|readability|security|maintainability",
+                    "severity": "low|medium|high|critical", 
+                    "line": [LINE_NUMBER],
+                    "description": "[SPECIFIC_ISSUE_DESCRIPTION]",
+                    "suggestion": "[SPECIFIC_IMPROVEMENT_SUGGESTION]"
                 }}
             ],
-            "suggestions": ["suggestion1"],
-            "security_concerns": ["concern1"],
-            "maintainability_score": 8.0
+            "suggestions": ["[SPECIFIC_IMPROVEMENT_SUGGESTIONS]"],
+            "security_concerns": ["[SPECIFIC_SECURITY_ISSUES_IF_ANY]"],
+            "maintainability_score": [SCORE_BASED_ON_MAINTAINABILITY_1_TO_10]
         }}
         """
         
@@ -115,22 +115,22 @@ class AIAnalyzer:
         Test Coverage: {coverage_pct}%
         Issues Found: {critical_issues} critical, {warnings_count} warnings
         
-        Provide architecture analysis in JSON format with scores on 1-10 scale:
+        Provide architecture analysis in JSON format with scores on 1-10 scale (analyze the specific repository, not examples):
         {{
-            "architecture_score": 8.5,
-            "patterns_detected": ["MVC", "Repository Pattern"],
+            "architecture_score": [SCORE_BASED_ON_ACTUAL_ARCHITECTURE_1_TO_10],
+            "patterns_detected": ["[ACTUAL_PATTERNS_FOUND_IN_CODE]"],
             "key_findings": [
-                "Well-structured codebase with clear separation of concerns",
-                "Good use of design patterns"
+                "[SPECIFIC_FINDINGS_ABOUT_THIS_REPOSITORY]",
+                "[ACTUAL_OBSERVATIONS_ABOUT_CODE_STRUCTURE]"
             ],
             "recommendations": [
-                "Consider implementing dependency injection",
-                "Add more unit tests for better coverage"
+                "[SPECIFIC_RECOMMENDATIONS_FOR_THIS_CODEBASE]",
+                "[TARGETED_IMPROVEMENTS_BASED_ON_ANALYSIS]"
             ],
             "complexity_analysis": {{
-                "overall_complexity": "Medium",
-                "maintainability": "Good",
-                "scalability": "Fair"
+                "overall_complexity": "[Low|Medium|High]",
+                "maintainability": "[Poor|Fair|Good|Excellent]",
+                "scalability": "[Poor|Fair|Good|Excellent]"
             }}
         }}
         """
@@ -139,8 +139,28 @@ class AIAnalyzer:
             logger.info("🔄 Calling AI model for architecture analysis")
             result = await self._call_ai_model(prompt)
             
-            # Ensure the result has the expected structure
-            if 'architecture_score' not in result:
+            # Handle both flat and nested AI response structures
+            if 'architecture_score' in result:
+                # Flat structure - ensure confidence is present
+                if 'confidence' not in result:
+                    result['confidence'] = 0.85  # Default confidence if missing
+                result['ai_analysis_available'] = True
+            elif 'architecture_analysis' in result:
+                # Nested structure - extract from nested object
+                analysis = result['architecture_analysis']
+                score = analysis.get('architecture_score')
+                confidence = analysis.get('confidence', 0.85)
+                # Flatten the structure for compatibility
+                result = {
+                    'architecture_score': score,
+                    'confidence': confidence,
+                    'patterns_detected': analysis.get('patterns_detected', []),
+                    'key_findings': analysis.get('observations', {}).get('coverage', ''),
+                    'recommendations': list(analysis.get('recommendations', {}).values()) if isinstance(analysis.get('recommendations'), dict) else analysis.get('recommendations', []),
+                    'complexity_analysis': analysis.get('complexity_analysis', {}),
+                    'ai_analysis_available': True
+                }
+            else:
                 logger.warning("⚠️ AI model response missing architecture_score, using fallback")
                 return self._fallback_architecture_analysis()
                 
@@ -170,6 +190,7 @@ class AIAnalyzer:
                 "maintainability": "Good",
                 "scalability": "Fair"
             },
+            "confidence": 0.3,  # Low confidence for fallback analysis
             "ai_analysis_available": False,
             "fallback_analysis": True
         }
@@ -196,17 +217,17 @@ class AIAnalyzer:
         Critical Issues: {critical_issues}
         Warnings: {warnings_count}
         
-        Provide code quality analysis in JSON format with scores on 1-10 scale:
+        Provide code quality analysis in JSON format with scores on 1-10 scale (analyze this specific repository):
         {{
-            "score": 8.5,
-            "maintainability": 8,
-            "readability": 7,
+            "score": [SCORE_BASED_ON_ACTUAL_ANALYSIS_1_TO_10],
+            "maintainability": [MAINTAINABILITY_SCORE_1_TO_10],
+            "readability": [READABILITY_SCORE_1_TO_10],
             "improvements": [
-                {{"title": "Improve test coverage", "priority": "high"}},
-                {{"title": "Add documentation", "priority": "medium"}}
+                {{"title": "[SPECIFIC_IMPROVEMENT_FOR_THIS_REPO]", "priority": "high|medium|low"}},
+                {{"title": "[ANOTHER_SPECIFIC_IMPROVEMENT]", "priority": "high|medium|low"}}
             ],
-            "strengths": ["Well structured", "Good naming"],
-            "weaknesses": ["Low test coverage", "Missing docs"]
+            "strengths": ["[ACTUAL_STRENGTHS_OBSERVED]", "[SPECIFIC_POSITIVE_ASPECTS]"],
+            "weaknesses": ["[ACTUAL_WEAKNESSES_FOUND]", "[SPECIFIC_ISSUES_IDENTIFIED]"]
         }}
         """
         
@@ -214,7 +235,29 @@ class AIAnalyzer:
             logger.info("🔄 Calling AI model for code quality analysis")
             result = await self._call_ai_model(prompt)
             
-            if 'score' not in result:
+            # Handle both flat and nested AI response structures
+            if 'score' in result:
+                # Flat structure - ensure confidence is present
+                if 'confidence' not in result:
+                    result['confidence'] = 0.85  # Default confidence if missing
+                result['ai_analysis_available'] = True
+            elif any(key in result for key in ['code_quality_analysis', 'quality_analysis', 'scores']):
+                # Nested structure - extract from nested object
+                analysis = result.get('code_quality_analysis') or result.get('quality_analysis') or result.get('scores', {})
+                score = analysis.get('code_quality_score') or analysis.get('score')
+                confidence = analysis.get('confidence', 0.85)
+                # Flatten the structure for compatibility
+                result = {
+                    'score': score,
+                    'confidence': confidence,
+                    'maintainability': analysis.get('maintainability', 8),
+                    'readability': analysis.get('readability', 7),
+                    'improvements': analysis.get('improvements', []),
+                    'strengths': analysis.get('strengths', []),
+                    'weaknesses': analysis.get('weaknesses', []),
+                    'ai_analysis_available': True
+                }
+            else:
                 logger.warning("⚠️ AI model response missing code quality score, using fallback")
                 return self._fallback_code_quality_analysis()
                 
@@ -246,6 +289,7 @@ class AIAnalyzer:
                 "Missing documentation",
                 "Inconsistent error handling"
             ],
+            "confidence": 0.3,  # Low confidence for fallback analysis
             "ai_analysis_available": False,
             "fallback_analysis": True
         }
@@ -277,6 +321,7 @@ class AIAnalyzer:
                 "Optimize database queries",
                 "Use async operations where possible"
             ],
+            "confidence": 0.3,  # Low confidence for fallback analysis
             "ai_analysis_available": False,
             "fallback_analysis": True
         }
@@ -312,6 +357,7 @@ class AIAnalyzer:
                 "Add security headers",
                 "Use secure authentication"
             ],
+            "confidence": 0.3,  # Low confidence for fallback analysis
             "ai_analysis_available": False,
             "fallback_analysis": True
         }

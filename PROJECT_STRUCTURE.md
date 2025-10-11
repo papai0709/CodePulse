@@ -23,6 +23,17 @@ CodePulse/
 │   ├── .env.docker               # Environment template
 │   └── README.md                 # Docker documentation
 │
+├── 📁 scripts/                     # Utility scripts and automation
+│   ├── deployment/               # Deployment automation
+│   │   ├── start_app.sh          # Start script (Linux/Mac)
+│   │   ├── start_app.bat         # Start script (Windows)
+│   │   ├── stop_app.sh           # Stop script (Linux/Mac)
+│   │   ├── stop_app.bat          # Stop script (Windows)
+│   │   └── monitor_logs.sh       # Log monitoring
+│   └── testing/                  # Testing utilities
+│       ├── test_ai_compatibility.py # AI features test
+│       └── test_app.py           # Application testing
+│
 ├── 📁 static/                      # Web assets
 │   ├── css/
 │   │   └── style.css             # Application styling
@@ -33,7 +44,8 @@ CodePulse/
 │   ├── base.html                 # Base template
 │   ├── index.html                # Main dashboard
 │   ├── loading.html              # Loading page
-│   ├── results.html              # Results display
+│   ├── results.html              # Standard results display
+│   ├── results_enhanced.html     # AI-enhanced results display
 │   ├── results_overview.html     # Overview tab
 │   ├── results_coverage.html     # Coverage tab
 │   ├── results_issues.html       # Issues tab
@@ -45,20 +57,21 @@ CodePulse/
 │   ├── test_analyzer.py          # Analyzer tests
 │   └── test_github_client.py     # GitHub client tests
 │
-├── 📁 scripts/                     # Utility scripts
-│   └── test_app.py               # Application testing
+├── 📁 docs/                        # Documentation
+│   ├── AI_ENHANCEMENT_SUMMARY.md  # AI features overview
+│   └── PROJECT_STRUCTURE.md       # This file
+│
+├── 📁 .github/                     # GitHub configuration
+│   └── copilot-instructions.md    # GitHub Copilot instructions
 │
 ├── 📄 app.py                       # 🚀 Main Flask application
 ├── 📄 config.py                   # Configuration management
 ├── 📄 requirements.txt            # Python dependencies
-│
-├── 📄 start_app.sh               # 🟢 Start script (Linux/Mac)
-├── 📄 stop_app.sh                # 🔴 Stop script (Linux/Mac)
-├── 📄 start_app.bat              # 🟢 Start script (Windows)
-├── 📄 stop_app.bat               # 🔴 Stop script (Windows)
+├── 📄 codepulse.log               # Application logs (created at runtime)
 │
 ├── 📄 .dockerignore              # Docker ignore patterns
-├── 📄 .env.docker                # Environment template
+├── 📄 .env                        # Environment variables (create from .env.example)
+├── 📄 .env.example               # Environment template
 ├── 📄 .gitignore                 # Git ignore patterns
 │
 ├── 📄 README.md                   # 📖 Main documentation
@@ -82,12 +95,14 @@ CodePulse/
 ### 🌐 Web Interface
 - **Responsive Design**: Bootstrap-based UI with dark mode support
 - **Interactive Dashboard**: Real-time analysis with progress indicators
+- **Export Functionality**: JSON, Markdown, and AI Summary export formats
 - **Tabbed Results**: Organized presentation of analysis outcomes
 
 ### 🧪 Testing & Scripts
 - **Automated Testing**: Comprehensive test suite for reliability
-- **Management Scripts**: Cross-platform scripts for easy operation
-- **Utility Scripts**: Development and maintenance tools
+- **Deployment Scripts**: Cross-platform scripts for production deployment
+- **Testing Utilities**: AI compatibility tests and application validation
+- **Management Tools**: Log monitoring and application lifecycle management
 
 ## 🚀 Deployment Options
 
@@ -96,14 +111,16 @@ CodePulse/
    - Easy scaling and management
    - Isolated and secure environment
 
-2. **📜 Shell Scripts**
+2. **📜 Deployment Scripts**
    - Quick local development
-   - Cross-platform compatibility
+   - Cross-platform compatibility (Windows/Linux/Mac)
    - Automatic dependency management
+   - Located in `scripts/deployment/`
 
 3. **🔧 Manual Setup**
    - Direct Python execution
    - Full control over environment
+   - Development and testing
    - Development and debugging
 
 ## 📊 Features by Directory

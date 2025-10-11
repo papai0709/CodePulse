@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   codepulse:
     build: 
@@ -11,7 +9,7 @@ services:
     environment:
       - FLASK_ENV=production
       - FLASK_APP=app.py
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
     volumes:
       # Mount for persistent logs (optional)
       - ./logs:/app/logs

@@ -831,13 +831,19 @@ function exportReport(format) {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(dataBlob);
         link.download = `${repoPath.replace('/', '_')}_analysis.json`;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     } else if (format === 'markdown' || format === 'ai-summary') {
         // Redirect to export endpoint
         window.location.href = `/export/${format}/${repoPath}`;
     }
     
-    bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+    if (modal) {
+        modal.hide();
+    }
 }
 
 // Initialize tooltips and tabs

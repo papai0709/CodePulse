@@ -3,7 +3,7 @@ CodePulse - Unified GitHub Repository Analyzer
 A single application supporting both standard and AI-enhanced analysis modes
 """
 
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session
 import os
 import json
 import asyncio
@@ -39,6 +39,10 @@ except ImportError:
 
 app = Flask(__name__)
 app.config.from_object(Config)
+app.secret_key = os.environ.get('SECRET_KEY', 'codepulse-dev-secret-key-change-in-production')
+
+# In-memory cache for analysis data (simple solution for demo)
+analysis_cache = {}
 
 # Validate configuration
 try:
@@ -186,6 +190,11 @@ def analyze_repository():
         total_duration = (datetime.now() - datetime.strptime(timestamp := datetime.now().strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S')).total_seconds()
         logger.info(f"🎉 Analysis completed successfully for {repo_path}")
         
+        # Store analysis data in memory cache for export functionality
+        cache_key = f'analysis_{repo_path.replace("/", "_")}'
+        analysis_cache[cache_key] = analysis_report
+        logger.info(f"💾 Analysis data stored in cache with key: {cache_key}")
+        
         return render_template(template, 
                              repo_path=repo_path,
                              analysis=analysis_report,
@@ -308,41 +317,26 @@ def get_ai_insights(repo_path):
 def export_report(format, repo_path):
     """Export analysis report in various formats"""
     try:
-        # This would typically retrieve cached analysis data
-        # For demonstration, return a sample export
+        # Try to get cached analysis data from memory cache
+        cache_key = f'analysis_{repo_path.replace("/", "_")}'
+        analysis_data = analysis_cache.get(cache_key)
+        
+        logger.info(f"🔍 Export request for {repo_path} in {format} format")
+        logger.info(f"📋 Looking for cache key: {cache_key}")
+        logger.info(f"💾 Cache keys available: {list(analysis_cache.keys())}")
+        
+        if not analysis_data:
+            return jsonify({'error': 'No analysis data found for this repository. Please run analysis first.'}), 404
+        
+        repo_name = repo_path.split('/')[-1]
         
         if format.lower() == 'json':
-            sample_data = {
-                'repository': repo_path,
-                'analysis_date': datetime.now().isoformat(),
-                'summary': 'Sample export data',
-                'export_format': format,
-                'ai_available': AI_AVAILABLE
-            }
-            
-            response = jsonify(sample_data)
+            response = jsonify(analysis_data)
             response.headers['Content-Disposition'] = f'attachment; filename={repo_path.replace("/", "_")}_analysis.json'
             return response
         
         elif format.lower() == 'markdown':
-            markdown_content = f"""# Analysis Report: {repo_path}
-
-**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-**Mode:** {'AI-Enhanced' if AI_AVAILABLE and Config.GITHUB_TOKEN else 'Standard'}
-
-## Summary
-This is a sample markdown export of the analysis report.
-
-## Key Metrics
-- Health Score: 85/100
-- Test Coverage: 78%
-- Issues Found: 5
-
-## Recommendations
-1. Improve test coverage
-2. Update dependencies
-3. Add documentation
-"""
+            markdown_content = generate_markdown_report(analysis_data, repo_path)
             
             from flask import Response
             response = Response(
@@ -352,11 +346,214 @@ This is a sample markdown export of the analysis report.
             )
             return response
         
+        elif format.lower() == 'ai-summary':
+            ai_summary = generate_ai_summary_report(analysis_data, repo_path)
+            
+            from flask import Response
+            response = Response(
+                ai_summary,
+                mimetype='text/markdown',
+                headers={'Content-Disposition': f'attachment; filename={repo_path.replace("/", "_")}_ai_summary.md'}
+            )
+            return response
+        
         else:
             return jsonify({'error': f'Unsupported export format: {format}'}), 400
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+def generate_markdown_report(analysis_data, repo_path):
+    """Generate a comprehensive markdown report"""
+    repo_name = repo_path.split('/')[-1]
+    metadata = analysis_data.get('metadata', {})
+    scores = analysis_data.get('scores', {})
+    summary = analysis_data.get('summary', {})
+    recommendations = analysis_data.get('recommendations', [])
+    ai_insights = analysis_data.get('ai_insights', {})
+    
+    report = f"""# Analysis Report: {repo_path}
+
+**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**Mode:** {'AI-Enhanced' if analysis_data.get('ai_enabled', False) else 'Standard'}
+**Analysis Date:** {metadata.get('analysis_date', 'Unknown')}
+
+## Repository Information
+- **Stars:** {metadata.get('stars', 'N/A')}
+- **Forks:** {metadata.get('forks', 'N/A')}
+- **Primary Language:** {metadata.get('primary_language', 'Unknown')}
+- **Description:** {metadata.get('description', 'No description available')}
+
+## Summary Scores
+- **Overall Health:** {scores.get('health_score', 'N/A')}/100
+- **Test Coverage:** {scores.get('coverage_score', 'N/A')}%
+- **Code Quality:** {scores.get('code_quality_score', 'N/A')}/100
+- **Security Score:** {scores.get('security_score', 'N/A')}/100
+- **Documentation:** {scores.get('documentation_score', 'N/A')}/100
+
+## Issues Summary
+- **Critical Issues:** {summary.get('critical_issues', 0)}
+- **High Priority:** {summary.get('high_issues', 0)}
+- **Medium Priority:** {summary.get('medium_issues', 0)}
+- **Low Priority:** {summary.get('low_issues', 0)}
+- **Total Issues:** {summary.get('total_issues', 0)}
+
+"""
+    
+    # Add AI Insights if available
+    if ai_insights and analysis_data.get('ai_enabled', False):
+        report += """## AI-Powered Insights
+
+### Architecture Analysis
+"""
+        arch = ai_insights.get('architecture', {})
+        if arch:
+            report += f"- **Score:** {arch.get('architecture_score', 'N/A')}/10\n"
+            report += f"- **Confidence:** {arch.get('confidence', 'N/A')}\n"
+            
+            patterns = arch.get('patterns_detected', [])
+            if patterns:
+                report += f"- **Patterns Detected:** {', '.join(patterns)}\n"
+            
+            findings = arch.get('key_findings', [])
+            if findings:
+                report += "\n**Key Findings:**\n"
+                for finding in findings:
+                    report += f"- {finding}\n"
+
+        report += "\n### Code Quality Analysis\n"
+        quality = ai_insights.get('code_quality', {})
+        if quality:
+            report += f"- **Score:** {quality.get('score', 'N/A')}/10\n"
+            report += f"- **Maintainability:** {quality.get('maintainability', 'N/A')}/10\n"
+            report += f"- **Readability:** {quality.get('readability', 'N/A')}/10\n"
+            
+            strengths = quality.get('strengths', [])
+            if strengths:
+                report += "\n**Strengths:**\n"
+                for strength in strengths:
+                    report += f"- {strength}\n"
+            
+            weaknesses = quality.get('weaknesses', [])
+            if weaknesses:
+                report += "\n**Areas for Improvement:**\n"
+                for weakness in weaknesses:
+                    report += f"- {weakness}\n"
+
+    # Add Recommendations
+    if recommendations:
+        report += "\n## Recommendations\n\n"
+        for rec in recommendations:
+            report += f"### {rec.get('title', 'Untitled')}\n"
+            report += f"**Priority:** {rec.get('priority', 'Unknown')}\n"
+            report += f"**Category:** {rec.get('category', 'General')}\n"
+            report += f"**Impact:** {rec.get('impact', 'Unknown')}\n"
+            report += f"**Effort:** {rec.get('estimated_effort', 'Unknown')}\n\n"
+            report += f"{rec.get('description', 'No description provided')}\n\n"
+            
+            actions = rec.get('actions', [])
+            if actions:
+                report += "**Action Items:**\n"
+                for action in actions:
+                    report += f"- {action}\n"
+            report += "\n"
+
+    report += f"""
+## Export Information
+- **Report Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+- **Export Format:** Markdown
+- **Data Source:** {'AI-Enhanced Analysis' if analysis_data.get('ai_enabled', False) else 'Standard Analysis'}
+
+---
+*Generated by CodePulse Repository Analyzer*
+"""
+    
+    return report
+
+def generate_ai_summary_report(analysis_data, repo_path):
+    """Generate an AI-focused summary report"""
+    ai_insights = analysis_data.get('ai_insights', {})
+    ai_summary = analysis_data.get('ai_summary', {})
+    
+    if not ai_insights and not ai_summary:
+        return f"""# AI Summary Report: {repo_path}
+
+**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## No AI Analysis Available
+
+This repository was analyzed using standard analysis only. 
+To get AI-powered insights, ensure:
+1. GitHub token is configured
+2. AI analysis is enabled during analysis
+
+---
+*Generated by CodePulse Repository Analyzer*
+"""
+    
+    report = f"""# AI Summary Report: {repo_path}
+
+**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**AI Confidence Level:** {ai_summary.get('confidence_level', 'Unknown')}
+**Overall AI Score:** {ai_summary.get('overall_ai_score', 'N/A')}/10
+
+## Key AI Findings
+
+"""
+    
+    key_findings = ai_summary.get('key_findings', [])
+    if key_findings:
+        for finding in key_findings:
+            report += f"- {finding}\n"
+    else:
+        report += "No specific findings available.\n"
+    
+    # Architecture Insights
+    arch = ai_insights.get('architecture', {})
+    if arch:
+        report += f"""
+## Architecture Analysis (AI Score: {arch.get('architecture_score', 'N/A')}/10)
+
+**Confidence:** {arch.get('confidence', 'N/A')}
+
+### Key Findings:
+"""
+        for finding in arch.get('key_findings', []):
+            report += f"- {finding}\n"
+        
+        report += "\n### Recommendations:\n"
+        for rec in arch.get('recommendations', []):
+            report += f"- {rec}\n"
+    
+    # Code Quality Insights
+    quality = ai_insights.get('code_quality', {})
+    if quality:
+        report += f"""
+## Code Quality Analysis (AI Score: {quality.get('score', 'N/A')}/10)
+
+**Maintainability:** {quality.get('maintainability', 'N/A')}/10
+**Readability:** {quality.get('readability', 'N/A')}/10
+
+### Strengths:
+"""
+        for strength in quality.get('strengths', []):
+            report += f"- {strength}\n"
+        
+        report += "\n### Areas for Improvement:\n"
+        for weakness in quality.get('weaknesses', []):
+            report += f"- {weakness}\n"
+    
+    report += f"""
+
+## AI Analysis Summary
+
+Total AI insights generated: {ai_summary.get('insights_count', 0)}
+
+---
+*Generated by CodePulse Repository Analyzer with AI-Enhanced Analysis*
+"""
+    
+    return report
 
 @app.route('/health')
 def health_check():
