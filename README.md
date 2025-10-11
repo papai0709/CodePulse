@@ -106,8 +106,6 @@ stop_app.bat
    ```bash
    python app_enhanced.py
    ```
-   python app_enhanced.py
-   ```
 
 3. **Enable AI Analysis**:
    - Visit http://localhost:5050
