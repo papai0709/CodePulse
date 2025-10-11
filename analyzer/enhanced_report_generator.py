@@ -51,6 +51,11 @@ class EnhancedReportGenerator(ReportGenerator):
                 )
                 logger.info("✅ AI recommendations generated")
                 
+                # Generate AI summary for template display
+                logger.info("📊 Generating AI summary")
+                base_report['ai_summary'] = self.generate_ai_summary(ai_insights)
+                logger.info(f"✅ AI summary generated - Overall score: {base_report['ai_summary'].get('overall_ai_score', 0):.1f}/10")
+                
                 base_report['ai_enabled'] = True
                 logger.info(f"🎉 Enhanced report completed successfully for {repo_name}")
             except Exception as e:
@@ -237,9 +242,19 @@ class EnhancedReportGenerator(ReportGenerator):
             insights_count = 0
             
             for category, insights in ai_insights.items():
-                if isinstance(insights, dict) and 'score' in insights:
-                    scores.append(insights['score'])
-                    insights_count += 1
+                if isinstance(insights, dict):
+                    # Check for different score field names
+                    score = None
+                    if 'score' in insights:
+                        score = insights['score']
+                    elif 'architecture_score' in insights:
+                        score = insights['architecture_score']
+                    elif 'quality_score' in insights:
+                        score = insights['quality_score']
+                    
+                    if score is not None:
+                        scores.append(score)
+                        insights_count += 1
                     
                     # Add key findings
                     if insights.get('key_findings'):

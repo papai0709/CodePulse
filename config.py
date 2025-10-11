@@ -19,13 +19,13 @@ class Config:
     
     # AI Configuration
     AI_MODEL = os.environ.get('AI_MODEL', 'gpt-4o-mini')
-    AI_ENDPOINT = os.environ.get('AI_ENDPOINT', 'https://models.inference.ai.azure.com')
+    AI_ENDPOINT = os.environ.get('AI_ENDPOINT', 'https://models.github.ai/inference')
     AI_MAX_TOKENS = int(os.environ.get('AI_MAX_TOKENS', '4000'))
     AI_TEMPERATURE = float(os.environ.get('AI_TEMPERATURE', '0.3'))
     AI_TIMEOUT = int(os.environ.get('AI_TIMEOUT', '30'))
     
     # GitHub Models Configuration
-    GITHUB_MODELS_ENDPOINT = "https://models.inference.ai.azure.com"
+    GITHUB_MODELS_ENDPOINT = "https://models.github.ai/inference"
     AVAILABLE_MODELS = [
         "gpt-4o-mini",
         "gpt-4o", 
