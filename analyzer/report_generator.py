@@ -124,6 +124,8 @@ class ReportGenerator:
                 'total_files': structure.get('total_test_files', 0),
                 'test_directories': structure.get('test_directories', []),
                 'test_types': structure.get('test_types', {}),
+                'test_distribution': structure.get('test_distribution', {}),
+                'test_type_details': structure.get('test_type_details', {}),
                 'frameworks': structure.get('test_frameworks', []),
                 'average_file_size': structure.get('average_test_size', 0)
             },

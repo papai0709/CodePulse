@@ -19,6 +19,9 @@
                     </p>
                 </div>
                 <div>
+                    <button class="btn btn-outline-secondary me-2" data-bs-toggle="modal" data-bs-target="#exportModal">
+                        <i class="fas fa-download me-1"></i>Export Report
+                    </button>
                     <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
                         <i class="fas fa-arrow-left me-1"></i>
                         Analyze Another
@@ -181,14 +184,17 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Choose export format:</p>
+                <p>Export your analysis report as a comprehensive HTML document:</p>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary" onclick="exportReport('json')">
-                        <i class="fas fa-code me-2"></i>JSON Format
+                    <button class="btn btn-primary" onclick="exportReport('html')">
+                        <i class="fas fa-file-code me-2"></i>Download HTML Report
                     </button>
-                    <button class="btn btn-outline-primary" onclick="exportReport('pdf')">
-                        <i class="fas fa-file-pdf me-2"></i>PDF Report
-                    </button>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        The HTML report includes all analysis data, charts, and AI insights in a standalone format that can be opened in any web browser.
+                    </small>
                 </div>
             </div>
         </div>
@@ -201,16 +207,13 @@
 function exportReport(format) {
     const analysisData = {{ analysis | tojson }};
     
-    if (format === 'json') {
-        const dataStr = JSON.stringify(analysisData, null, 2);
-        const dataBlob = new Blob([dataStr], {type: 'application/json'});
-        
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = `${analysisData.metadata.repository.replace('/', '_')}_analysis.json`;
-        link.click();
+    if (format === 'html') {
+        // Redirect to HTML export endpoint
+        const repoPath = "{{ analysis.metadata.repository }}";
+        window.location.href = `/export/html/${repoPath}`;
     }
     
+    // Close modal
     bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
 }
 

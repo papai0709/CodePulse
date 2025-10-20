@@ -102,12 +102,71 @@
                         {% endfor %}
                     </li>
                     <li class="mb-2">
-                        <strong>Test Types:</strong>
-                        <ul class="mt-2">
-                            <li>Unit: {{ analysis.test_analysis.test_structure.test_types.unit }}</li>
-                            <li>Integration: {{ analysis.test_analysis.test_structure.test_types.integration }}</li>
-                            <li>E2E: {{ analysis.test_analysis.test_structure.test_types.e2e }}</li>
-                        </ul>
+                        <strong>Test Types Distribution:</strong>
+                        {% if analysis.test_analysis.test_structure.test_distribution %}
+                            {% set distribution = analysis.test_analysis.test_structure.test_distribution %}
+                            <div class="mt-2">
+                                <!-- Test Distribution Chart -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="test-type-breakdown">
+                                            {% for test_type, count in analysis.test_analysis.test_structure.test_types.items() %}
+                                                {% if count > 0 %}
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span class="text-capitalize">{{ test_type }}:</span>
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="badge bg-{% if test_type == 'unit' %}primary{% elif test_type == 'integration' %}success{% elif test_type == 'e2e' %}warning{% elif test_type == 'performance' %}info{% else %}secondary{% endif %} me-2">{{ count }}</span>
+                                                            <span class="text-muted small">({{ "%.1f"|format(distribution.percentages[test_type]|default(0)) }}%)</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="progress mb-2" style="height: 8px;">
+                                                        <div class="progress-bar bg-{% if test_type == 'unit' %}primary{% elif test_type == 'integration' %}success{% elif test_type == 'e2e' %}warning{% elif test_type == 'performance' %}info{% else %}secondary{% endif %}" 
+                                                             style="width: {{ distribution.percentages[test_type]|default(0) }}%"></div>
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="test-balance-score">
+                                            <h6>Test Balance Score</h6>
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="progress flex-grow-1 me-3" style="height: 20px;">
+                                                    <div class="progress-bar {% if distribution.balance_score >= 80 %}bg-success{% elif distribution.balance_score >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         style="width: {{ distribution.balance_score }}%">
+                                                        {{ distribution.balance_score }}/100
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">
+                                                Optimal: 70% Unit, 20% Integration, 10% E2E
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Distribution Recommendations -->
+                                {% if distribution.recommendations %}
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-lightbulb"></i> Distribution Recommendations:</h6>
+                                        <ul class="mb-0">
+                                            {% for recommendation in distribution.recommendations %}
+                                                <li>{{ recommendation }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="mt-2">
+                                <div class="text-muted">Unit: {{ analysis.test_analysis.test_structure.test_types.unit }}</div>
+                                <div class="text-muted">Integration: {{ analysis.test_analysis.test_structure.test_types.integration }}</div>
+                                <div class="text-muted">E2E: {{ analysis.test_analysis.test_structure.test_types.e2e }}</div>
+                                {% if analysis.test_analysis.test_structure.test_types.performance > 0 %}
+                                    <div class="text-muted">Performance: {{ analysis.test_analysis.test_structure.test_types.performance }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                     </li>
                     <li class="mb-2">
                         <strong>Frameworks:</strong>

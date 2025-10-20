@@ -346,6 +346,17 @@ def export_report(format, repo_path):
             )
             return response
         
+        elif format.lower() == 'html':
+            html_content = generate_html_report(analysis_data, repo_path)
+            
+            from flask import Response
+            response = Response(
+                html_content,
+                mimetype='text/html',
+                headers={'Content-Disposition': f'attachment; filename={repo_path.replace("/", "_")}_analysis.html'}
+            )
+            return response
+        
         elif format.lower() == 'ai-summary':
             ai_summary = generate_ai_summary_report(analysis_data, repo_path)
             
@@ -554,6 +565,292 @@ Total AI insights generated: {ai_summary.get('insights_count', 0)}
 """
     
     return report
+
+def generate_html_report(analysis_data, repo_path):
+    """Generate a comprehensive HTML report"""
+    from flask import render_template_string
+    
+    repo_name = repo_path.split('/')[-1]
+    metadata = analysis_data.get('metadata', {})
+    scores = analysis_data.get('scores', {})
+    summary = analysis_data.get('summary', {})
+    recommendations = analysis_data.get('recommendations', [])
+    ai_insights = analysis_data.get('ai_insights', {})
+    test_analysis = analysis_data.get('test_analysis', {})
+    
+    # Create a comprehensive HTML template
+    html_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodePulse Analysis Report - {{ repo_path }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .metric-card { padding: 1rem; border-radius: 0.5rem; background: white; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .metric-value { font-size: 2rem; font-weight: bold; }
+        .metric-label { color: #6c757d; font-size: 0.9rem; }
+        .score-good { color: #28a745; }
+        .score-warning { color: #ffc107; }
+        .score-danger { color: #dc3545; }
+        .score-info { color: #17a2b8; }
+        .header-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem 0; }
+        .ai-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .progress-custom { height: 10px; border-radius: 5px; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="header-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="mb-2"><i class="fas fa-chart-line me-2"></i>CodePulse Analysis Report</h1>
+                    <p class="mb-1 opacity-75">{{ repo_path }}</p>
+                    <p class="mb-0 small">
+                        <i class="fas fa-calendar me-1"></i>Generated: {{ analysis_date }}
+                        {% if ai_enabled %}
+                        <span class="ms-3"><i class="fas fa-robot me-1"></i>AI-Enhanced Analysis</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <div class="d-inline-block bg-white bg-opacity-20 rounded p-3">
+                        <div class="h3 mb-1">{{ health_score }}/100</div>
+                        <div class="small">Health Score</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container my-4">
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value {{ coverage_color }}">{{ coverage_score }}%</div>
+                    <div class="metric-label">Test Coverage</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value score-info">{{ code_quality_score }}/100</div>
+                    <div class="metric-label">Code Quality</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value score-warning">{{ security_score }}/100</div>
+                    <div class="metric-label">Security Score</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card text-center">
+                    <div class="metric-value score-good">{{ documentation_score }}/100</div>
+                    <div class="metric-label">Documentation</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Repository Information -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fab fa-github me-2"></i>Repository Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr><td><strong>Stars:</strong></td><td>{{ stars }}</td></tr>
+                            <tr><td><strong>Forks:</strong></td><td>{{ forks }}</td></tr>
+                            <tr><td><strong>Language:</strong></td><td>{{ primary_language }}</td></tr>
+                            <tr><td><strong>Description:</strong></td><td>{{ description }}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-bug me-2"></i>Issues Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6"><div class="text-danger h4">{{ critical_issues }}</div><small>Critical</small></div>
+                            <div class="col-6"><div class="text-warning h4">{{ high_issues }}</div><small>High</small></div>
+                            <div class="col-6"><div class="text-info h4">{{ medium_issues }}</div><small>Medium</small></div>
+                            <div class="col-6"><div class="text-muted h4">{{ low_issues }}</div><small>Low</small></div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <strong>Total Issues: {{ total_issues }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Analysis -->
+        {% if test_analysis %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-vial me-2"></i>Test Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if test_distribution %}
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <h6>Test Distribution</h6>
+                                {% for test_type, count in test_types.items() %}
+                                {% if count > 0 %}
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-capitalize">{{ test_type }}:</span>
+                                    <span><strong>{{ count }}</strong> ({{ "%.1f"|format(test_distribution.percentages[test_type]|default(0)) }}%)</span>
+                                </div>
+                                <div class="progress progress-custom mb-3">
+                                    <div class="progress-bar {% if test_type == 'unit' %}bg-primary{% elif test_type == 'integration' %}bg-success{% elif test_type == 'e2e' %}bg-warning{% else %}bg-info{% endif %}" 
+                                         style="width: {{ test_distribution.percentages[test_type]|default(0) }}%"></div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div class="col-lg-6">
+                                <h6>Test Balance Score</h6>
+                                <div class="progress progress-custom mb-2" style="height: 20px;">
+                                    <div class="progress-bar {% if test_distribution.balance_score >= 80 %}bg-success{% elif test_distribution.balance_score >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         style="width: {{ test_distribution.balance_score }}%">
+                                        {{ test_distribution.balance_score }}/100
+                                    </div>
+                                </div>
+                                <small class="text-muted">Optimal: 70% Unit, 20% Integration, 10% E2E</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- AI Insights -->
+        {% if ai_insights and ai_enabled %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card ai-section">
+                    <div class="card-header border-0">
+                        <h5 class="card-title mb-0 text-white"><i class="fas fa-robot me-2"></i>AI-Powered Insights</h5>
+                    </div>
+                    <div class="card-body text-white">
+                        {% if ai_insights.architecture %}
+                        <h6><i class="fas fa-sitemap me-2"></i>Architecture Analysis (Score: {{ ai_insights.architecture.architecture_score|default('N/A') }}/10)</h6>
+                        <p class="small mb-3">Confidence: {{ ai_insights.architecture.confidence|default('N/A') }}</p>
+                        {% if ai_insights.architecture.key_findings %}
+                        <ul class="mb-3">
+                            {% for finding in ai_insights.architecture.key_findings %}
+                            <li>{{ finding }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                        {% endif %}
+
+                        {% if ai_insights.code_quality %}
+                        <h6><i class="fas fa-code me-2"></i>Code Quality Analysis</h6>
+                        <div class="row text-center mb-3">
+                            <div class="col-4"><div class="h5">{{ ai_insights.code_quality.score|default('N/A') }}/10</div><small>Overall</small></div>
+                            <div class="col-4"><div class="h5">{{ ai_insights.code_quality.maintainability|default('N/A') }}/10</div><small>Maintainability</small></div>
+                            <div class="col-4"><div class="h5">{{ ai_insights.code_quality.readability|default('N/A') }}/10</div><small>Readability</small></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recommendations -->
+        {% if recommendations %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0"><i class="fas fa-lightbulb me-2"></i>Recommendations</h5>
+                    </div>
+                    <div class="card-body">
+                        {% for rec in recommendations %}
+                        <div class="border-start border-4 {% if rec.priority == 'High' %}border-danger{% elif rec.priority == 'Medium' %}border-warning{% else %}border-info{% endif %} ps-3 mb-3">
+                            <h6 class="mb-1">{{ rec.title }}</h6>
+                            <p class="text-muted small mb-2">
+                                <span class="badge bg-{% if rec.priority == 'High' %}danger{% elif rec.priority == 'Medium' %}warning{% else %}info{% endif %} me-2">{{ rec.priority }}</span>
+                                <span class="me-2">{{ rec.category }}</span>
+                                <span>Impact: {{ rec.impact }}</span>
+                            </p>
+                            <p class="mb-2">{{ rec.description }}</p>
+                            {% if rec.actions %}
+                            <ul class="small">
+                                {% for action in rec.actions %}
+                                <li>{{ action }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center text-muted small">
+                    <hr>
+                    <p>Generated by <strong>CodePulse Repository Analyzer</strong> on {{ analysis_date }}</p>
+                    <p>This is an {{ 'AI-Enhanced' if ai_enabled else 'Standard' }} analysis report</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+    """
+    
+    # Prepare template variables
+    template_vars = {
+        'repo_path': repo_path,
+        'analysis_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'ai_enabled': analysis_data.get('ai_enabled', False),
+        'health_score': scores.get('health_score', 'N/A'),
+        'coverage_score': scores.get('coverage_score', 'N/A'),
+        'coverage_color': test_analysis.get('coverage_color', 'score-info'),
+        'code_quality_score': scores.get('code_quality_score', 'N/A'),
+        'security_score': scores.get('security_score', 'N/A'),
+        'documentation_score': scores.get('documentation_score', 'N/A'),
+        'stars': metadata.get('stars', 'N/A'),
+        'forks': metadata.get('forks', 'N/A'),
+        'primary_language': metadata.get('primary_language', 'Unknown'),
+        'description': metadata.get('description', 'No description available'),
+        'critical_issues': summary.get('critical_issues', 0),
+        'high_issues': summary.get('high_issues', 0),
+        'medium_issues': summary.get('medium_issues', 0),
+        'low_issues': summary.get('low_issues', 0),
+        'total_issues': summary.get('total_issues', 0),
+        'test_analysis': test_analysis,
+        'test_distribution': test_analysis.get('test_structure', {}).get('test_distribution'),
+        'test_types': test_analysis.get('test_structure', {}).get('test_types', {}),
+        'ai_insights': ai_insights,
+        'recommendations': recommendations
+    }
+    
+    return render_template_string(html_template, **template_vars)
 
 @app.route('/health')
 def health_check():
