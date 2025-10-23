@@ -10,23 +10,33 @@ import asyncio
 import logging
 from .report_generator import ReportGenerator
 from .ai_analyzer import AIAnalyzer
+from .veracode_analyzer import VeracodeAnalyzer
+from config import Config
 
 # Configure logger for Enhanced Report Generator
 logger = logging.getLogger(__name__)
 
 class EnhancedReportGenerator(ReportGenerator):
-    """Enhanced report generator with AI insights and recommendations"""
+    """Enhanced report generator with AI insights and Veracode security analysis"""
     
     def __init__(self, github_token: Optional[str] = None):
         super().__init__()
         self.ai_analyzer = AIAnalyzer(github_token)
+        
+        # Initialize Veracode analyzer if enabled
+        self.veracode_analyzer = None
+        if Config.VERACODE_ENABLED:
+            self.veracode_analyzer = VeracodeAnalyzer()
+            logger.info(f"🔒 Veracode analyzer initialized: {self.veracode_analyzer.is_available}")
+        
         logger.info(f"🧠 Enhanced Report Generator initialized with AI support: {bool(github_token)}")
         
     async def generate_enhanced_report(self, repo_info: Dict[str, Any], 
                                      coverage_results: Dict[str, Any], 
                                      issues: Dict[str, Any],
+                                     repo_path: str = None,
                                      enable_ai: bool = False) -> Dict[str, Any]:
-        """Generate comprehensive analysis report with optional AI insights"""
+        """Generate comprehensive analysis report with optional AI insights and Veracode security analysis"""
         repo_name = repo_info.get('name', 'Unknown')
         logger.info(f"📊 Generating enhanced report for {repo_name} (AI enabled: {enable_ai})")
         
@@ -65,6 +75,35 @@ class EnhancedReportGenerator(ReportGenerator):
         else:
             logger.info("📊 AI features disabled, using standard report")
             base_report['ai_enabled'] = False
+            
+        # Add Veracode security analysis if enabled and repo_path is provided
+        if self.veracode_analyzer and repo_path:
+            try:
+                logger.info("🔒 Starting Veracode security analysis")
+                veracode_analysis = await self.veracode_analyzer.analyze_repository(repo_path, repo_name)
+                base_report['veracode_analysis'] = veracode_analysis
+                
+                # Update security score with Veracode results
+                if 'scores' in base_report and veracode_analysis.get('security_score') is not None:
+                    # Use the lower of existing security score and Veracode score
+                    existing_score = base_report['scores'].get('security_score', 100)
+                    veracode_score = veracode_analysis.get('security_score', 100)
+                    base_report['scores']['security_score'] = min(existing_score, veracode_score)
+                    base_report['scores']['veracode_score'] = veracode_score
+                
+                base_report['veracode_enabled'] = True
+                logger.info(f"✅ Veracode analysis completed - Security score: {veracode_analysis.get('security_score', 'N/A')}")
+                
+            except Exception as e:
+                logger.error(f"❌ Veracode analysis failed for {repo_name}: {str(e)}", exc_info=True)
+                base_report['veracode_error'] = f"Veracode analysis failed: {str(e)}"
+                base_report['veracode_enabled'] = False
+        else:
+            if self.veracode_analyzer:
+                logger.info("⚠️ Veracode analyzer available but repo_path not provided")
+            else:
+                logger.info("📊 Veracode analysis disabled")
+            base_report['veracode_enabled'] = False
             
         return base_report
     

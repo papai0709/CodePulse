@@ -140,7 +140,7 @@ def analyze_repository():
                 start_time = datetime.now()
                 analysis_report = loop.run_until_complete(
                     report_generator.generate_enhanced_report(
-                        repo_info, coverage_results, issues, enable_ai=True
+                        repo_info, coverage_results, issues, repo_path=repo_data['local_path'], enable_ai=True
                     )
                 )
                 end_time = datetime.now()
@@ -256,7 +256,7 @@ def api_analyze():
             try:
                 analysis_report = loop.run_until_complete(
                     report_generator.generate_enhanced_report(
-                        repo_info, coverage_results, issues, enable_ai=True
+                        repo_info, coverage_results, issues, repo_path=repo_data['local_path'], enable_ai=True
                     )
                 )
             finally:
@@ -773,6 +773,128 @@ def generate_html_report(analysis_data, repo_path):
         </div>
         {% endif %}
 
+        <!-- Veracode Security Analysis -->
+        {% if veracode_analysis %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="card-title mb-0"><i class="fas fa-shield-alt me-2"></i>Veracode Professional Security Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Security Score and Key Metrics -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="metric-value {% if veracode_analysis.security_score >= 80 %}score-good{% elif veracode_analysis.security_score >= 60 %}score-warning{% else %}score-danger{% endif %}">
+                                        {{ veracode_analysis.security_score|default('N/A') }}/100
+                                    </div>
+                                    <div class="metric-label">Veracode Score</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="metric-value score-danger">{{ veracode_analysis.summary.critical_flaws|default(0) }}</div>
+                                    <div class="metric-label">Critical Flaws</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="metric-value score-warning">{{ veracode_analysis.summary.high_severity|default(0) }}</div>
+                                    <div class="metric-label">High Severity</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="metric-value score-info">{{ veracode_analysis.summary.total_findings|default(0) }}</div>
+                                    <div class="metric-label">Total Findings</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if veracode_analysis.vulnerability_categories %}
+                        <!-- Vulnerability Categories -->
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Vulnerability Categories</h6>
+                        <div class="row mb-3">
+                            {% for category in veracode_analysis.vulnerability_categories %}
+                            <div class="col-md-6 mb-2">
+                                <div class="d-flex justify-content-between align-items-center p-2 border-start border-4 {% if category.severity == 'Critical' %}border-danger{% elif category.severity == 'High' %}border-warning{% elif category.severity == 'Medium' %}border-info{% else %}border-secondary{% endif %} bg-light">
+                                    <div>
+                                        <strong>{{ category.name }}</strong>
+                                        <small class="d-block text-muted">{{ category.description|default('') }}</small>
+                                    </div>
+                                    <span class="badge bg-{% if category.severity == 'Critical' %}danger{% elif category.severity == 'High' %}warning{% elif category.severity == 'Medium' %}info{% else %}secondary{% endif %}">
+                                        {{ category.count|default(0) }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% if veracode_analysis.compliance %}
+                        <!-- Compliance Status -->
+                        <h6><i class="fas fa-certificate me-2"></i>Compliance Status</h6>
+                        <div class="row mb-3">
+                            {% for standard, status in veracode_analysis.compliance.items() %}
+                            <div class="col-md-4 mb-2">
+                                <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                                    <span>{{ standard|upper }}</span>
+                                    <span class="badge bg-{% if status %}success{% else %}danger{% endif %}">
+                                        {% if status %}Compliant{% else %}Non-Compliant{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Scan Summary -->
+                        <h6><i class="fas fa-info-circle me-2"></i>Scan Summary</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li><strong>Scan Date:</strong> {{ veracode_analysis.scan_date|default('N/A') }}</li>
+                                    <li><strong>Scan Duration:</strong> {{ veracode_analysis.scan_duration|default('N/A') }}</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="list-unstyled">
+                                    <li><strong>Files Scanned:</strong> {{ veracode_analysis.files_scanned|default('N/A') }}</li>
+                                    <li><strong>Lines of Code:</strong> {{ veracode_analysis.lines_of_code|default('N/A') }}</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {% if veracode_analysis.recommendations %}
+                        <!-- Security Recommendations -->
+                        <h6 class="mt-3"><i class="fas fa-shield-alt me-2"></i>Security Recommendations</h6>
+                        <ul class="mb-0">
+                            {% for recommendation in veracode_analysis.recommendations %}
+                            <li>{{ recommendation }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif veracode_configured %}
+        <!-- Veracode Not Available Message -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
+                        <h5>Veracode Professional Security Analysis</h5>
+                        <p class="text-muted">Veracode security scanning is configured but analysis is not available for this repository.</p>
+                        <p class="small">This may occur if the repository cannot be processed by Veracode or if there was an issue with the scan.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Recommendations -->
         {% if recommendations %}
         <div class="row mb-4">
@@ -847,7 +969,9 @@ def generate_html_report(analysis_data, repo_path):
         'test_distribution': test_analysis.get('test_structure', {}).get('test_distribution'),
         'test_types': test_analysis.get('test_structure', {}).get('test_types', {}),
         'ai_insights': ai_insights,
-        'recommendations': recommendations
+        'recommendations': recommendations,
+        'veracode_analysis': analysis_data.get('veracode_analysis'),
+        'veracode_configured': analysis_data.get('veracode_configured', False)
     }
     
     return render_template_string(html_template, **template_vars)

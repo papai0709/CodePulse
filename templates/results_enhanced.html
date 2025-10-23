@@ -545,6 +545,205 @@
                         
                         <!-- Security Tab -->
                         <div class="tab-pane fade" id="security" role="tabpanel">
+                            <!-- Veracode Security Analysis Section -->
+                            {% if analysis.veracode_analysis %}
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-danger shadow-sm">
+                                        <div class="card-header bg-danger text-white">
+                                            <h6 class="mb-0">
+                                                <i class="fas fa-shield-virus me-2"></i>
+                                                Veracode Professional Security Analysis
+                                                <span class="badge bg-success text-white ms-2">
+                                                    <i class="fas fa-check-circle"></i> Enabled
+                                                </span>
+                                            </h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <!-- Veracode Security Score -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-3">
+                                                    <div class="metric-card text-center">
+                                                        <div class="metric-value text-{{ analysis.veracode_analysis.score_color }}">
+                                                            {{ analysis.veracode_analysis.security_score }}/100
+                                                        </div>
+                                                        <div class="metric-label">Veracode Score</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="metric-card text-center">
+                                                        <div class="metric-value text-danger">
+                                                            {{ analysis.veracode_analysis.critical_flaws }}
+                                                        </div>
+                                                        <div class="metric-label">Critical Flaws</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="metric-card text-center">
+                                                        <div class="metric-value text-warning">
+                                                            {{ analysis.veracode_analysis.high_flaws }}
+                                                        </div>
+                                                        <div class="metric-label">High Severity</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="metric-card text-center">
+                                                        <div class="metric-value text-info">
+                                                            {{ analysis.veracode_analysis.total_flaws }}
+                                                        </div>
+                                                        <div class="metric-label">Total Findings</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Vulnerability Categories -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <h6>Vulnerability Categories</h6>
+                                                    {% for category in analysis.veracode_analysis.vulnerability_categories %}
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span>{{ category.name }}:</span>
+                                                        <span class="badge bg-{{ category.severity_color }}">{{ category.count }}</span>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <h6>Compliance Status</h6>
+                                                    <div class="alert alert-{{ analysis.veracode_analysis.compliance_status.color }} mb-2">
+                                                        <i class="fas fa-{% if analysis.veracode_analysis.compliance_status.status == 'compliant' %}check-circle{% elif analysis.veracode_analysis.compliance_status.status == 'conditional' %}exclamation-triangle{% else %}times-circle{% endif %} me-2"></i>
+                                                        <strong>{{ analysis.veracode_analysis.compliance_status.status|title }}</strong>
+                                                    </div>
+                                                    <small class="text-muted">{{ analysis.veracode_analysis.compliance_status.message }}</small>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- High Severity Issues with Source Code Paths -->
+                                            {% set high_severity_issues = analysis.veracode_analysis.security_issues | selectattr('severity', 'in', ['critical', 'high']) | list %}
+                                            {% if high_severity_issues %}
+                                            <div class="row mb-3">
+                                                <div class="col-12">
+                                                    <h6>
+                                                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                                        High Severity Issues - Source Code Locations
+                                                    </h6>
+                                                    <div class="card border-danger">
+                                                        <div class="card-body p-3">
+                                                            {% for issue in high_severity_issues %}
+                                                            <div class="d-flex align-items-start mb-3 {% if not loop.last %}border-bottom pb-3{% endif %}">
+                                                                <div class="flex-shrink-0">
+                                                                    <span class="badge bg-{{ 'danger' if issue.severity == 'critical' else 'warning' }} me-3">
+                                                                        {% if issue.severity == 'critical' %}
+                                                                            <i class="fas fa-times-circle"></i> CRITICAL
+                                                                        {% else %}
+                                                                            <i class="fas fa-exclamation-triangle"></i> HIGH
+                                                                        {% endif %}
+                                                                    </span>
+                                                                </div>
+                                                                <div class="flex-grow-1">
+                                                                    <div class="d-flex align-items-center mb-2">
+                                                                        <i class="fas fa-file-code text-primary me-2"></i>
+                                                                        <strong class="text-primary">{{ issue.file }}</strong>
+                                                                        {% if issue.line > 0 %}
+                                                                        <span class="badge bg-secondary text-white ms-2">
+                                                                            <i class="fas fa-map-pin"></i> Line {{ issue.line }}
+                                                                        </span>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                    <div class="mb-2">
+                                                                        <strong>{{ issue.category }}:</strong> {{ issue.description }}
+                                                                    </div>
+                                                                    {% if issue.cwe_id and issue.cwe_id != 'N/A' %}
+                                                                    <div class="mb-2">
+                                                                        <span class="badge bg-info text-white">{{ issue.cwe_id }}</span>
+                                                                        {% if issue.veracode_finding_id %}
+                                                                        <span class="badge bg-secondary ms-1">ID: {{ issue.veracode_finding_id }}</span>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                    {% endif %}
+                                                                    <div class="text-muted small">
+                                                                        <i class="fas fa-lightbulb me-1"></i>
+                                                                        <strong>Remediation:</strong> {{ issue.suggestion }}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                            
+                                                            {% if high_severity_issues|length > 5 %}
+                                                            <div class="text-center mt-3">
+                                                                <small class="text-muted">
+                                                                    Showing {{ high_severity_issues|length }} high severity issues. 
+                                                                    <strong>Priority:</strong> Address critical issues first.
+                                                                </small>
+                                                            </div>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                            
+                                            <!-- Scan Summary -->
+                                            <div class="row">
+                                                <div class="col-12">
+                                                    <h6>Scan Summary</h6>
+                                                    <div class="row text-center">
+                                                        <div class="col-md-3">
+                                                            <small class="text-muted">Scan Date</small>
+                                                            <div>{{ analysis.veracode_analysis.scan_date[:10] }}</div>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <small class="text-muted">Duration</small>
+                                                            <div>{{ analysis.veracode_analysis.scan_summary.duration_minutes }} min</div>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <small class="text-muted">Files Scanned</small>
+                                                            <div>{{ analysis.veracode_analysis.scan_summary.files_scanned }}</div>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <small class="text-muted">Lines of Code</small>
+                                                            <div>{{ analysis.veracode_analysis.scan_summary.lines_of_code }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Veracode Recommendations -->
+                                            {% if analysis.veracode_analysis.recommendations %}
+                                            <div class="mt-3">
+                                                <h6>Professional Security Recommendations</h6>
+                                                <ul class="list-group list-group-flush">
+                                                    {% for rec in analysis.veracode_analysis.recommendations %}
+                                                    <li class="list-group-item border-0 px-0 bg-transparent">
+                                                        <i class="fas fa-shield-alt text-danger me-2"></i>
+                                                        {{ rec }}
+                                                    </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% elif analysis.veracode_enabled == false %}
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-warning">
+                                        <div class="card-body text-center">
+                                            <i class="fas fa-shield-virus text-warning mb-2" style="font-size: 2rem;"></i>
+                                            <h6>Veracode Professional Security Scanning</h6>
+                                            <p class="text-muted mb-3">
+                                                Professional-grade security analysis is available but not configured.
+                                            </p>
+                                            <p class="small">
+                                                To enable Veracode scanning, configure your API credentials in the environment settings.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
                             {% if analysis.ai_insights.security %}
                             <div class="row">
                                 <div class="col-md-12 mb-3">

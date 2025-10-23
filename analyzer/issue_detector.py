@@ -4,11 +4,22 @@ import json
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
+from config import Config
 
 class IssueDetector:
     """Detects various issues in code repositories and suggests corrections"""
     
     def __init__(self):
+        # Initialize Veracode analyzer if enabled
+        self.veracode_analyzer = None
+        if Config.VERACODE_ENABLED:
+            try:
+                from .veracode_analyzer import VeracodeAnalyzer
+                self.veracode_analyzer = VeracodeAnalyzer()
+            except ImportError:
+                # Veracode analyzer not available
+                self.veracode_analyzer = None
+        
         self.issue_patterns = {
             'security': {
                 'hardcoded_secrets': [
@@ -64,6 +75,11 @@ class IssueDetector:
                 'structure_issues': self._detect_structure_issues(repo_path),
                 'maintenance_issues': self._detect_maintenance_issues(repo_info)
             }
+            
+            # Add Veracode security issues if available
+            # Note: Veracode analysis is async and handled in enhanced report generator
+            # Here we just mark that Veracode results should be included if available
+            issues['veracode_integration_enabled'] = self.veracode_analyzer is not None
             
             # Calculate severity scores
             issues['severity_summary'] = self._calculate_severity_summary(issues)
@@ -678,3 +694,41 @@ class IssueDetector:
             })
         
         return action_items
+    
+    def merge_veracode_issues(self, existing_issues: Dict[str, Any], 
+                             veracode_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Merge Veracode security issues with existing issues
+        
+        Args:
+            existing_issues: Current issues detected by CodePulse
+            veracode_analysis: Veracode analysis results
+            
+        Returns:
+            Updated issues dictionary with Veracode findings integrated
+        """
+        if not veracode_analysis or not veracode_analysis.get('security_issues'):
+            return existing_issues
+        
+        # Get Veracode security issues
+        veracode_security_issues = veracode_analysis.get('security_issues', [])
+        
+        # Merge with existing security issues
+        existing_security_issues = existing_issues.get('security_issues', [])
+        
+        # Add Veracode issues to security issues
+        merged_security_issues = existing_security_issues + veracode_security_issues
+        
+        # Update the issues dictionary
+        updated_issues = existing_issues.copy()
+        updated_issues['security_issues'] = merged_security_issues
+        updated_issues['veracode_security_issues'] = veracode_security_issues
+        updated_issues['veracode_analysis_available'] = True
+        
+        # Recalculate severity summary with Veracode findings
+        updated_issues['severity_summary'] = self._calculate_severity_summary(updated_issues)
+        
+        # Regenerate action items with Veracode findings
+        updated_issues['action_items'] = self._generate_action_items(updated_issues)
+        
+        return updated_issues
