@@ -25,6 +25,12 @@ A comprehensive, intelligent tool that analyzes GitHub repositories for test cov
 
 ### Easy Setup with Scripts
 
+#### Initial Setup (First Time)
+```bash
+# Run the setup script to configure the environment
+./scripts/deployment/setup.sh
+```
+
 #### Linux/Mac
 ```bash
 # Start the application

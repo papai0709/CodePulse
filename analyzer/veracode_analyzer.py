@@ -40,7 +40,12 @@ class VeracodeAnalyzer:
         self.veracode_api = None
         if VERACODE_AVAILABLE and self.api_id and self.api_key:
             try:
-                self.veracode_api = VeracodeAPI(api_id=self.api_id, api_key=self.api_key)
+                # Set environment variables for Veracode API
+                os.environ['VERACODE_API_KEY_ID'] = self.api_id
+                os.environ['VERACODE_API_KEY_SECRET'] = self.api_key
+                
+                # Initialize Veracode API client (no parameters needed)
+                self.veracode_api = VeracodeAPI()
                 logger.info("🔒 Veracode API client initialized successfully")
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Veracode API client: {str(e)}")
@@ -76,7 +81,7 @@ class VeracodeAnalyzer:
             
             # Step 3: Monitor scan progress (async)
             logger.info("⏳ Monitoring scan progress...")
-            scan_results = await self._monitor_scan_progress(upload_result.get('scan_id'))
+            scan_results = await self._monitor_scan_progress(upload_result.get('scan_id'), repo_path)
             
             # Step 4: Parse and format results
             logger.info("📊 Parsing Veracode results...")
@@ -203,12 +208,13 @@ class VeracodeAnalyzer:
             logger.error(f"❌ Upload failed: {str(e)}")
             raise
     
-    async def _monitor_scan_progress(self, scan_id: str) -> Dict[str, Any]:
+    async def _monitor_scan_progress(self, scan_id: str, repo_path: str = None) -> Dict[str, Any]:
         """
         Monitor scan progress and retrieve results
         
         Args:
             scan_id: Scan identifier
+            repo_path: Path to the repository (for mock data generation)
             
         Returns:
             Scan results
@@ -233,8 +239,8 @@ class VeracodeAnalyzer:
                 logger.info("✅ Scan completed")
                 break
         
-        # Return simulated scan results
-        return self._generate_mock_scan_results(scan_id)
+        # Return simulated scan results with repo_path for dynamic generation
+        return self._generate_mock_scan_results(scan_id, repo_path)
     
     def _parse_veracode_results(self, scan_results: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -538,13 +544,23 @@ class VeracodeAnalyzer:
         selected_vulns = random.sample(relevant_vulns, min(vuln_count, len(relevant_vulns)))
         
         for i, vuln_template in enumerate(selected_vulns):
-            # Pick a random file type that matches this vulnerability
-            matching_types = [ext for ext in vuln_template['file_patterns'] if ext in file_types]
-            if matching_types:
-                file_ext = random.choice(matching_types)
-                file_name = f"src/main{file_ext}" if i == 0 else f"src/component_{i}{file_ext}"
+            # Generate more realistic file names based on vulnerability type
+            if vuln_template['cwe_id'] == 'CWE-89':  # SQL Injection
+                file_name = f"src/models/data_access{random.choice(['.py', '.java', '.cs'][:1])}"
+            elif vuln_template['cwe_id'] == 'CWE-79':  # XSS
+                file_name = f"templates/user_form{random.choice(['.html', '.jsx'][:1])}"
+            elif vuln_template['cwe_id'] == 'CWE-22':  # Path Traversal
+                file_name = f"src/handlers/file_upload{random.choice(['.py', '.java'][:1])}"
+            elif vuln_template['cwe_id'] == 'CWE-327':  # Crypto Issues
+                file_name = f"src/security/encryption{random.choice(['.py', '.java', '.cs'][:1])}"
             else:
-                file_name = f"src/file_{i}.py"
+                # Pick a random file type that matches this vulnerability
+                matching_types = [ext for ext in vuln_template['file_patterns'] if ext in file_types]
+                if matching_types:
+                    file_ext = random.choice(matching_types)
+                    file_name = f"src/utils/helper_{i}{file_ext}"
+                else:
+                    file_name = f"src/component_{i}.py"
             
             vulnerabilities.append({
                 'finding_id': f'F{i+1:03d}',
@@ -571,45 +587,41 @@ class VeracodeAnalyzer:
             duration_minutes = max(2, min(15, repo_stats['files_scanned'] // 5))
             
         else:
-            # Fallback to static data if no repo path
+            # Generate minimal findings without hardcoded files
             repo_stats = {
-                'files_scanned': 42,
-                'lines_of_code': 1250,
-                'total_files': 60
+                'files_scanned': 10,
+                'lines_of_code': 250,
+                'total_files': 15
             }
-            duration_minutes = 5
-            mock_findings = [
+            duration_minutes = 3
+            
+            # Generate dynamic findings instead of hardcoded ones
+            mock_findings = []
+            import random
+            random.seed(42)  # Consistent seed for reproducible results
+            
+            # Only generate findings if we really want to show some examples
+            finding_templates = [
                 {
-                    'finding_id': 'F001',
-                    'severity': 'high',
-                    'cwe_id': 'CWE-89',
-                    'category_name': 'SQL Injection',
-                    'file_path': 'src/database.py',
-                    'line_number': 45,
-                    'description': 'Potential SQL injection vulnerability in database query',
-                    'remediation_guidance': 'Use parameterized queries or prepared statements'
-                },
-                {
-                    'finding_id': 'F002',
-                    'severity': 'medium',
-                    'cwe_id': 'CWE-79',
-                    'category_name': 'Cross-Site Scripting',
-                    'file_path': 'templates/user_input.html',
-                    'line_number': 23,
-                    'description': 'Potential XSS vulnerability in user input handling',
-                    'remediation_guidance': 'Properly escape user input and use CSP headers'
-                },
-                {
-                    'finding_id': 'F003',
+                    'cwe_id': 'CWE-200',
+                    'category_name': 'Information Exposure',
                     'severity': 'low',
-                    'cwe_id': 'CWE-311',
-                    'category_name': 'Cryptographic Issues',
-                    'file_path': 'config/security.py',
-                    'line_number': 12,
-                    'description': 'Weak cryptographic algorithm detected',
-                    'remediation_guidance': 'Use stronger encryption algorithms (AES-256)'
+                    'description': 'Potential information disclosure in error handling',
+                    'file_path': 'src/utils.py'
                 }
             ]
+            
+            for i, template in enumerate(finding_templates):
+                mock_findings.append({
+                    'finding_id': f'F{i+1:03d}',
+                    'severity': template['severity'],
+                    'cwe_id': template['cwe_id'],
+                    'category_name': template['category_name'],
+                    'file_path': template['file_path'],
+                    'line_number': random.randint(10, 50),
+                    'description': template['description'],
+                    'remediation_guidance': f'Review and address {template["category_name"].lower()} issues'
+                })
 
         return {
             'scan_id': scan_id,

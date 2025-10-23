@@ -24,13 +24,29 @@ fi
 if [ -d "venv" ]; then
     echo "📦 Activating virtual environment..."
     source venv/bin/activate
+    
+    # Verify that veracode-api-py is installed in the virtual environment
+    if ! python -c "import veracode_api_py" 2>/dev/null; then
+        echo "⚠️  Veracode API library not found in virtual environment"
+        echo "📋 Installing dependencies including Veracode API..."
+        pip install -r requirements.txt
+    fi
 else
-    echo "⚠️  No virtual environment found. Using system Python."
+    echo "❌ Error: Virtual environment not found!"
+    echo "Please create a virtual environment first:"
+    echo "  python3 -m venv venv"
+    echo "  source venv/bin/activate"
+    echo "  pip install -r requirements.txt"
+    exit 1
 fi
 
-# Install dependencies if requirements.txt exists
-if [ -f "requirements.txt" ]; then
-    echo "📋 Installing/updating dependencies..."
+# Install dependencies if requirements.txt exists and virtual environment is active
+if [ -f "requirements.txt" ] && [ -n "$VIRTUAL_ENV" ]; then
+    echo "📋 Verifying dependencies in virtual environment..."
+    pip install -r requirements.txt --quiet
+elif [ -f "requirements.txt" ]; then
+    echo "⚠️  Warning: Not using virtual environment. Dependencies may conflict."
+    echo "📋 Installing dependencies..."
     pip install -r requirements.txt
 fi
 

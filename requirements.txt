@@ -17,5 +17,5 @@ gunicorn>=21.2.0
 aiohttp>=3.9.0
 asyncio>=3.4.3
 openai>=1.0.0
-veracode-api-py>=0.10.0
+veracode-api-py>=0.9.64
 httpx>=0.25.0

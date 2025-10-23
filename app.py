@@ -3,12 +3,13 @@ CodePulse - Unified GitHub Repository Analyzer
 A single application supporting both standard and AI-enhanced analysis modes
 """
 
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, session
 import os
-import json
 import asyncio
 import logging
 from datetime import datetime
+
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+
 from analyzer.github_client import GitHubClient
 from analyzer.test_analyzer import TestAnalyzer
 from analyzer.issue_detector import IssueDetector
